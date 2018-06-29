@@ -1,10 +1,8 @@
 package me.mbcu.integrated.mmm.ops.okex
 
-import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts.global
 import akka.stream.ActorMaterializer
-import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
-import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown, ShutdownCode}
+import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.Status.Status
@@ -20,14 +18,13 @@ import scala.util.{Failure, Success, Try}
 class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
-  private var op : Option[ActorRef] = None
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
   val OKEX_ERRORS: Map[Int, String] = OkexRest.OKEX_ERRORS
   private var ws = StandaloneAhcWSClient()
   val url: String = OkexRest.endpoint
 
-  override def start(): Unit = op = Some(sender())
+  override def start(): Unit = setOp(Some(sender()))
 
   override def sendRequest(r: SendRequest): Unit = {
 
@@ -138,12 +135,6 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
     }
   }
 
-  override def errorRetry(sendRequest: SendRequest, code: Int, msg: String): Unit = op foreach(_ ! ErrorRetryRest(sendRequest, code, msg))
-
-  override def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach(_ ! ErrorShutdown(shutdownCode, code, msg))
-
-  override def errorIgnore(code: Int, msg: String): Unit = op foreach(_ ! ErrorIgnore(code, msg))
-
   val toOffer :  JsValue => Offer = (data: JsValue) =>
     new Offer(
       (data \ "order_id").as[Long].toString,
@@ -156,6 +147,5 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
       (data \ "price").as[BigDecimal],
       (data \ "deal_amount").asOpt[BigDecimal]
     )
-
 
 }

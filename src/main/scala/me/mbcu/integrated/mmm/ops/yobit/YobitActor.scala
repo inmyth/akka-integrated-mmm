@@ -68,14 +68,13 @@ object YobitActor {
 class YobitActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
-  var op : Option[ActorRef] = None
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
   private var ws = StandaloneAhcWSClient()
   val url: String = Yobit.endpoint
   val urlTrade: String = Yobit.endpointTrade
 
-  override def start(): Unit = op = Some(sender())
+  override def start(): Unit = setOp(Some(sender()))
 
   override def sendRequest(r: AbsRestActor.SendRequest): Unit = {
     r match {
@@ -169,15 +168,10 @@ class YobitActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
             }
         }
 
-      case _ => case _=> error(s"No MainActor Reference YobitActor#parse : $raw")
+      case _ => error(s"No MainActor Reference YobitActor#parse : $raw")
 
     }
 
   }
 
-  override def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach(_ ! ErrorShutdown(shutdownCode, code, msg))
-
-  override def errorIgnore(code: Int, msg: String): Unit = op foreach(_ ! ErrorIgnore(code, msg))
-
-  override def errorRetry(sendRequest: AbsRestActor.SendRequest, code: Int, msg: String): Unit = op foreach(_ ! ErrorRetryRest(sendRequest, code, msg))
 }
