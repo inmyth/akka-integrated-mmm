@@ -6,11 +6,11 @@ import me.mbcu.integrated.mmm.ops.Definitions.Protocol.Protocol
 
 abstract class AbsExchange {
   def name: Exchange
+
   def protocol : Protocol
+
   def endpoint : String
+
   def getActorRefProps(bot: Bot): Props
-
-  def orderbookLogSeconds : Int
-
 
 }

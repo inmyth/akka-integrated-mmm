@@ -40,8 +40,6 @@ abstract class AbsRestActor(bot: Bot) extends Actor  {
 
   def start()
 
-  def parse(a: SendRequest, r: String)
-
   def url: String
 
   def errorShutdown(shutdownCode : ShutdownCode, code : Int, msg : String) : Unit

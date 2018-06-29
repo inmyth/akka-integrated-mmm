@@ -1,4 +1,4 @@
-package me.mbcu.integrated.mmm.common
+package me.mbcu.integrated.ops.common
 
 import me.mbcu.integrated.mmm.ops.Definitions
 import me.mbcu.integrated.mmm.ops.common.Bot

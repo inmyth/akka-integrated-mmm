@@ -9,7 +9,6 @@ object OkexRest extends AbsExchange {
   val name = Exchange.okexRest
   val protocol = Protocol.rest
   val endpoint = "https://www.okex.com/api/v1"
-  val orderbookLogSeconds = 30
 
   override def getActorRefProps(bot: Bot): Props = Props(new OkexRestActor(bot))
 

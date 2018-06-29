@@ -45,7 +45,7 @@ There are two routes to stream orders to websocket client.
 
 ## Stupid Websocket Exchanges
 
-These exchanges that websocket to wrap REST methods
+Th websocket just wraps REST methods
 
 Characteristics:
 
@@ -53,18 +53,30 @@ Characteristics:
 - Manual order check
 - Since the requests and responses are the same as REST, some methods are not possible.
 
+Example: Okex
+
+
 In REST it is possible to map request and response. In websocket it is not possible.
 That's why client uses response-challenge on a param like request id to match it with incoming response.
 Having one websocket for one bot(one symbol) can make things easier, since we can eliminate the possibilities of getting responses not related to that bot.
 Although it is very likely such server isn't designed to handle HFT (since it just wraps REST) it is still worthwhile to do websocket method if only to save some latency from Http POST/GET.
 
 
-Example: Okex
 
 
 ## Currently supported exchanges
 
-okexRest
+### okexRest
+
+- Okex returns errors reserved for sign error (10007, 10005) even a Cloudlare website for non-sign error.
+As such 10007, 10005 and html response will be retried. *Make sure API key and secret are correct.*
+
+
+### yobit
+- The HmacSHA512 signature has to be in lowercased hex
+- ~Trade returns order status.~ Trade returns order status which always indicates that the order is unfilled.
+- Apparently it takes a few seconds from order entering the server to get matched in orderbook.
+- ActiveOrder returns only the current amount which might have been partially filled. To get complete info, we still need to call OrderInfo on each order
 
 
 

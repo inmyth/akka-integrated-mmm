@@ -1,6 +1,6 @@
 name := "akka-integrated-mmm"
 
-version := "0.0.1"
+version := "0.0.2"
 
 scalaVersion := "2.12.6"
 
@@ -34,3 +34,4 @@ libraryDependencies += "com.typesafe.play" %% "play-json-joda" % "2.6.9"
 
 libraryDependencies += "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.0.0-M1"
 libraryDependencies += "com.typesafe.play" %% "play-ws-standalone-json" % "2.0.0-M1"
+libraryDependencies += "javax.xml.crypto" % "jsr105-api" % "1.0.1"

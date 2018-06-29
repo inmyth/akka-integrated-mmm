@@ -9,7 +9,7 @@ import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.Status.Status
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Bot, Offer}
-import me.mbcu.integrated.mmm.ops.okex.models.request.{OkexRequest, OkexStatus}
+import me.mbcu.integrated.mmm.ops.okex.models.{OkexRequest, OkexStatus}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -62,25 +62,25 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
             .post(stringifyXWWWForm(OkexRequest.restInfoOrder(bot.credentials, bot.pair, a.id)))
             .map(response => parse(a, response.body[String]))
 
-        case b: GetTicker =>
+        case a: GetTicker =>
           ws.url(s"$url/ticker.do")
             .addQueryStringParameters(OkexRequest.restTicker(bot.pair).toSeq: _*)
             .get()
-            .map(response => parse(b, response.body[String]))
+            .map(response => parse(a, response.body[String]))
       }
   }
 
-  override def parse(a: SendRequest, r: String): Unit = {
+  def parse(a: SendRequest, raw: String): Unit = {
     info(
       s"""Response:
-         |$r
+         |$raw
        """.stripMargin)
     op match {
       case Some(ref) =>
-        val x = Try(Json parse r)
+        val x = Try(Json parse raw)
         x match {
           case Success(js) =>
-            if ((js \ "error_code").isDefined){
+            if ((js \ "success").isDefined){
               val code = (js \ "error_code").as[Int]
               val msg = OKEX_ERRORS.getOrElse(code, " code list : https://github.com/okcoin-okex/API-docs-OKEx.com/blob/master/API-For-Spot-EN/Error%20Code%20For%20Spot.md")
               pipeErrors(code, msg, a)
@@ -108,24 +108,24 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
 
                 case t: GetOrderInfo =>
                   val order = (js \ "orders").as[JsArray].head
-                  if (order.isDefined) ref ! GotOrderInfo(toOffer(order.as[JsValue])) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $r")
+                  if (order.isDefined) ref ! GotOrderInfo(toOffer(order.as[JsValue])) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
 
-                case _ => error(s"Unknown OkexRestActor#parseRest : $r")
+                case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
               }
             }
 
-          case Failure(e) => r match  {
+          case Failure(e) => raw match  {
             case u : String if u.contains("<html>") =>
               val code = -1000
               val msg =
                 s"""${OKEX_ERRORS(code)}
-                   |$r
+                   |$raw
              """.stripMargin
               pipeErrors(code, msg, a)
-            case _ => error(s"Unknown OkexRestActor#parseRest : $r")
+            case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
           }
         }
-      case _=> error(s"No MainActor Reference OkexRestActor#parseRest : $r")
+      case _=> error(s"No MainActor Reference OkexRestActor#parseRest : $raw")
     }
 
   }
@@ -143,7 +143,6 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
   override def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach(_ ! ErrorShutdown(shutdownCode, code, msg))
 
   override def errorIgnore(code: Int, msg: String): Unit = op foreach(_ ! ErrorIgnore(code, msg))
-
 
   val toOffer :  JsValue => Offer = (data: JsValue) =>
     new Offer(

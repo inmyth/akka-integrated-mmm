@@ -69,10 +69,7 @@ class OpRestActor(bot: Bot, exchangeDef: AbsExchange) extends Actor with MyLoggi
     }
 
     case PlaceOrders(pMaps, as) => pMaps.zipWithIndex.foreach {
-      case (newOffer, i) =>
-        info(s"""MainActor#SendRestOrders sending $as : ${bot.exchange} / ${bot.pair}
-             |$newOffer""".stripMargin)
-        rest.foreach(r => context.system.scheduler.scheduleOnce((Settings.int500.id * i) milliseconds, r, NewOrder(newOffer)))
+      case (newOffer, i) => rest.foreach(r => context.system.scheduler.scheduleOnce((Settings.int500.id * i) milliseconds, r, NewOrder(newOffer)))
     }
 
     case CheckOrders(ids) => ids.zipWithIndex.foreach {

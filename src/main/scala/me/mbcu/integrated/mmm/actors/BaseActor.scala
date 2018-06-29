@@ -6,7 +6,7 @@ import me.mbcu.integrated.mmm.actors.BaseActor.Shutdown
 import me.mbcu.integrated.mmm.actors.FileActor.ConfigReady
 import me.mbcu.integrated.mmm.actors.SesActor.{CacheMessages, MailSent}
 import me.mbcu.integrated.mmm.ops.Definitions
-import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown, Protocol}
+import me.mbcu.integrated.mmm.ops.Definitions._
 import me.mbcu.integrated.mmm.ops.common.Config
 import me.mbcu.integrated.mmm.utils.MyLogging
 
@@ -43,7 +43,9 @@ class BaseActor(configPath: String) extends Actor with MyLogging {
     case ConfigReady(tryConf) => tryConf match {
 
       case Failure(e) =>
-        error(s"Config error ${e.getMessage}")
+        val msg = s"Config error ${e.getMessage}"
+        error(msg)
+        self ! ErrorShutdown(ShutdownCode.fatal, -11, msg)
 
       case Success(c) =>
         config = Some(c)
