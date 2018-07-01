@@ -39,7 +39,6 @@ object Env {
 
 }
 
-
 object StartingPrice extends Enumeration {
   type StartingPrice = Value
   val lastTicker, lastOwn, contAsIs = Value
@@ -49,7 +48,7 @@ case class Bot(
                 exchange: Exchange,
                 credentials: Credentials,
                 pair: String,
-                startingPrice : String,
+                seed : String,
                 gridSpace: BigDecimal,
                 buyGridLevels: Int,
                 sellGridLevels: Int,
@@ -62,7 +61,6 @@ case class Bot(
                 baseScale: Int,
                 isStrictLevels: Boolean,
                 isNoQtyCutoff: Boolean,
-                isHardReset: Boolean,
                 strategy: Strategies
               )
 
@@ -77,7 +75,7 @@ object Bot {
         "exchange" -> bot.exchange,
         "credentials" -> bot.credentials,
         "pair" -> bot.pair,
-        "startingPrice" -> bot.startingPrice,
+        "seed" -> bot.seed,
         "gridSpace" -> bot.gridSpace,
         "buyGridLevels" -> bot.buyGridLevels,
         "sellGridLevels" -> bot.sellGridLevels,
@@ -90,7 +88,6 @@ object Bot {
         "baseScale" -> bot.baseScale,
         "isStrictLevels" -> bot.isStrictLevels,
         "isNoQtyCutoff" -> bot.isNoQtyCutoff,
-        "isHardReset" -> bot.isHardReset,
         "strategy" -> bot.strategy
       )
     }
@@ -99,7 +96,7 @@ object Bot {
       (JsPath \ "ops").read[Exchange] and
         (JsPath \ "credentials").read[Credentials] and
         (JsPath \ "pair").read[String] and
-        (JsPath \ "startingPrice").read[String] and
+        (JsPath \ "seed").read[String] and
         (JsPath \ "gridSpace").read[BigDecimal] and
         (JsPath \ "buyGridLevels").read[Int] and
         (JsPath \ "sellGridLevels").read[Int] and
@@ -112,8 +109,7 @@ object Bot {
         (JsPath \ "baseScale").read[Int] and
         (JsPath \ "isStrictLevels").read[Boolean] and
         (JsPath \ "isNoQtyCutoff").read[Boolean] and
-        (JsPath \ "isHardReset").read[Boolean]
-        and (JsPath \ "strategy").read[Strategies]
+        (JsPath \ "strategy").read[Strategies]
       ) (Bot.apply _)
   }
 

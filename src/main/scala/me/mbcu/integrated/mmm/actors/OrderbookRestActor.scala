@@ -55,7 +55,7 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
       }
 
     case "keep or clear orderbook" =>
-      bot.startingPrice match {
+      bot.seed match {
         case a if a.equalsIgnoreCase(StartingPrice.lastOwn.toString) | a.equalsIgnoreCase(StartingPrice.lastTicker.toString) =>
           if (sels.isEmpty && buys.isEmpty) self ! "init price" else op.foreach(_ ! ClearOrderbook((buys ++ sels).toSeq.map(_._1)))
         case _ => self ! "init price"
@@ -79,7 +79,7 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case GotStartPrice(price) =>
       price match {
         case Some(p) =>
-          val seed = initialSeed(p, isHardReset = true)
+          val seed = initialSeed(p)
           sendOrders(seed, "seed")
         case _ =>
       }
@@ -124,7 +124,7 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     sort(Side.sell)
   }
 
-  def initialSeed(midPrice: BigDecimal, isHardReset: Boolean): Seq[Offer] = {
+  def initialSeed(midPrice: BigDecimal): Seq[Offer] = {
     var res: Seq[Offer] = Seq.empty[Offer]
     var buyQty = BigDecimal(0)
     var selQty = BigDecimal(0)
@@ -146,13 +146,13 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
       case (a, s) if a != 0 && s == 0 =>
         val anyBuy = sortedBuys.head
         val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, midPrice, bot.strategy)
-        val bl = if (isHardReset) bot.buyGridLevels else calcMid._3 - 1
+        val bl = calcMid._3 - 1
         set(calcMid._1, calcMid._2, calcMid._2, bl, bot.sellGridLevels)
 
       case (a, s) if a == 0 && s != 0 =>
         val anySel = sortedSels.head
         val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
-        val sl = if (isHardReset) bot.sellGridLevels else calcMid._3 - 1
+        val sl = calcMid._3 - 1
         set(calcMid._1, calcMid._2, calcMid._2, bot.buyGridLevels, sl)
 
       case (a, s) if a != 0 && s != 0 =>
@@ -160,13 +160,13 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
         val calcMidSel = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
         val anyBuy = sortedBuys.head
         val calcMidBuy = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, calcMidSel._1, bot.strategy)
-        val bl = if (isHardReset) bot.buyGridLevels else calcMidBuy._3 - 1
-        val sl = if (isHardReset) bot.sellGridLevels else calcMidSel._3 - 1
+        val bl = calcMidBuy._3 - 1
+        val sl = calcMidSel._3 - 1
         set(calcMidSel._1, calcMidBuy._2, calcMidSel._2, bl, sl)
     }
 
-    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, buyLevels, bot.gridSpace, Side.buy, PingPong.ping, false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
-    res ++= Strategy.seed(selQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, selLevels, bot.gridSpace, Side.sell, PingPong.ping, false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
+    res ++= Strategy.seed(buyQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, levels = buyLevels, gridSpace = bot.gridSpace, side = Side.buy, act = PingPong.ping, isPulledFromOtherSide = false, strategy = bot.strategy, isNoQtyCutoff = bot.isNoQtyCutoff, maxPrice = bot.maxPrice, minPrice = bot.minPrice)
+    res ++= Strategy.seed(selQty, calcMidPrice, bot.quantityPower, bot.counterScale, bot.baseScale, bot.pair, selLevels, bot.gridSpace, Side.sell, PingPong.ping, isPulledFromOtherSide = false, bot.strategy, bot.isNoQtyCutoff, bot.maxPrice, bot.minPrice)
     res
   }
 

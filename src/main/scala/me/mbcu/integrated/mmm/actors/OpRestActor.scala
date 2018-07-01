@@ -52,13 +52,13 @@ class OpRestActor(bot: Bot, exchangeDef: AbsExchange) extends Actor with MyLoggi
     case a: GotOrderCancelled => book foreach (_ ! a)
 
     case GetLastTrade =>
-      bot.startingPrice match {
+      bot.seed match {
         case s if s contains "last" => s match {
           case m if m.equalsIgnoreCase(StartingPrice.lastOwn.toString) => rest foreach (_ ! GetOwnPastTrades())
           case m if m.equalsIgnoreCase(StartingPrice.lastTicker.toString) => rest foreach (_ ! GetTicker())
         }
         case s if s contains "cont" => self ! GotStartPrice(None)
-        case _ => self ! GotStartPrice(Some(BigDecimal(bot.startingPrice)))
+        case _ => self ! GotStartPrice(Some(BigDecimal(bot.seed)))
       }
 
     case GotStartPrice(price) => price match {

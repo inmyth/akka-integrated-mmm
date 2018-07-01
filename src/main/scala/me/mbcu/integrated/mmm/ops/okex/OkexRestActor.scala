@@ -131,7 +131,8 @@ class OkexRestActor(bot: Bot) extends AbsRestActor(bot) with MyLogging {
     code match {
       case 10009 | 10010 | 10011 | 10014 | 10016 | 10024 | 1002  => errorIgnore(code, msg)
       case 20100 | 10007 | 10005 | -1000 => errorRetry(sendRequest, code, msg)
-      case _ => errorShutdown(ShutdownCode.fatal, code, msg)
+      case 10008 | 10100 => errorShutdown(ShutdownCode.fatal, code, msg)
+      case _ => errorRetry(sendRequest, code, msg)
     }
   }
 
