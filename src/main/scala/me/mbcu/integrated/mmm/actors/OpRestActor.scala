@@ -2,7 +2,7 @@ package me.mbcu.integrated.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.dispatch.ExecutionContexts.global
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor.{CheckOrders, ClearOrderbook, GetLastTrade, PlaceOrders}
+import me.mbcu.integrated.mmm.actors.OrderbookRestActor.{CancelOrders, CheckOrders, GetLastTrade, PlaceOrders}
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown, Settings}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, Bot, StartingPrice}
@@ -13,10 +13,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object OpRestActor {
-
-  case class SendCheckOrder(symbol: String, id: String)
-
-  case class SendCheckOrderRest(symbol: String, params: Map[String, String])
 
 }
 
@@ -41,10 +37,10 @@ class OpRestActor(bot: Bot, exchangeDef: AbsExchange) extends Actor with MyLoggi
 
     case GetOwnPastTrades => rest.foreach(_ ! GetOwnPastTrades)
 
-    case ClearOrderbook(idList) => idList.zipWithIndex.foreach {
-      case (id, i) =>
-        info(s"MainActor#ClearOrderbook : deleting $id - ${bot.pair} / ${bot.exchange}")
-        context.system.scheduler.scheduleOnce((Settings.int500.id * i) milliseconds, self, CancelOrder(id))
+    case CancelOrders(orders, as) => orders.zipWithIndex.foreach {
+      case (o, i) =>
+        info(s"OpRest#Cancelling order as $as: ${o.id} - ${bot.pair} / ${bot.exchange}")
+        context.system.scheduler.scheduleOnce((Settings.int500.id * i) milliseconds, self, CancelOrder(o.id))
     }
 
     case a: CancelOrder => rest foreach (_ ! a)
@@ -64,7 +60,7 @@ class OpRestActor(bot: Bot, exchangeDef: AbsExchange) extends Actor with MyLoggi
     case GotStartPrice(price) => price match {
       case Some(p) => book.foreach(_ ! GotStartPrice(price))
       case _ =>
-        error(s"MainActor#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
+        error(s"OpRest#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
         System.exit(-1)
     }
 

@@ -1,3 +1,7 @@
+0.0.4
+- added trim
+- refactored orderbook
+
 0.0.3
 - removed isHardReset
 - changes startPrice to seed

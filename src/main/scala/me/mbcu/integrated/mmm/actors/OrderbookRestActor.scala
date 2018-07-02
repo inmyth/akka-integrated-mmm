@@ -2,7 +2,7 @@ package me.mbcu.integrated.mmm.actors
 
 import akka.actor.{Actor, ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor.{CheckOrders, ClearOrderbook, GetLastTrade, PlaceOrders}
+import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.Settings
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
@@ -22,7 +22,7 @@ object OrderbookRestActor {
 
   case class CheckOrders(ids : Seq[String])
 
-  case class ClearOrderbook(ids : Seq[String])
+  case class CancelOrders(orders : Seq[Offer], as: String)
 
   object GetLastTrade
 
@@ -57,24 +57,34 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case "keep or clear orderbook" =>
       bot.seed match {
         case a if a.equalsIgnoreCase(StartingPrice.lastOwn.toString) | a.equalsIgnoreCase(StartingPrice.lastTicker.toString) =>
-          if (sels.isEmpty && buys.isEmpty) self ! "init price" else op.foreach(_ ! ClearOrderbook((buys ++ sels).toSeq.map(_._1)))
+          if (sels.isEmpty && buys.isEmpty) self ! "init price" else op.foreach(_ ! cancelOrders((buys ++ sels).toSeq.map(_._2), "Clear orderbook" ))
         case _ => self ! "init price"
       }
 
     case "init price" => op.foreach(_ ! GetLastTrade)
 
     case "refresh orders" =>
-      op.foreach(_ ! CheckOrders((buys ++ sels).toSeq.map(_._1)))
-      self ! "balancer"
+      (sels.size, buys.size) match {
+        case (0,0) => self ! "init price"
+        case _ =>
+          self ! "balancer"
+          if (bot.isStrictLevels) self ! "trim"
+          op.foreach(_ ! CheckOrders((buys ++ sels).toSeq.map(_._1)))
+      }
 
     case "balancer" =>
       val growth = grow(Side.buy) ++ grow(Side.sell)
       sendOrders(growth, "balancer")
 
+    case "trim" =>
+      val trims = trim(Side.buy) ++ trim(Side.sell)
+      cancelOrders(trims, "Level cap")
+
     case GotOrderCancelled(id) =>
+      resetRefresh()
       remove(Side.sell, id)
       remove(Side.buy, id)
-      if (sels.isEmpty && buys.isEmpty) self ! "init price"
+      sortBoth()
 
     case GotStartPrice(price) =>
       price match {
@@ -85,9 +95,7 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
       }
 
     case GotOrderInfo(offer) =>
-      refreshCancellable.foreach(_.cancel())
-      refreshCancellable = Some(context.system.scheduler.scheduleOnce(Settings.int5.id second, self, "refresh orders"))
-
+      resetRefresh()
       offer.status match {
 
         case Some(Status.unfilled) =>
@@ -96,10 +104,9 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
 
         case Some(Status.filled) =>
           remove(offer.side, offer.id)
-          sortBoth()
+          sort(offer.side)
           val counters = counter(offer)
           sendOrders(counters, "counter")
-
 
         case Some(Status.partialFilled) =>
           add(offer)
@@ -116,8 +123,14 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case "log orderbooks" => info(Offer.dump(sortedBuys, sortedSels))
   }
 
+  def resetRefresh(): Unit ={
+    refreshCancellable.foreach(_.cancel())
+    refreshCancellable = Some(context.system.scheduler.scheduleOnce(Settings.int5.id second, self, "refresh orders"))
+  }
 
   def sendOrders(offers: Seq[Offer], as: String): Unit = op foreach(_ ! PlaceOrders(offers, as))
+
+  def cancelOrders(offers: Seq[Offer], as: String): Unit = op foreach(_ ! CancelOrders(offers, as))
 
   def sortBoth(): Unit = {
     sort(Side.buy)
@@ -185,6 +198,12 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     }
   }
 
+  def trim(side : Side) : Seq[Offer] = {
+    val (orders, limit) = if (side == Side.buy) (sortedBuys, bot.buyGridLevels) else (sortedSels, bot.sellGridLevels)
+    // this may cause a hole.
+    orders.slice(limit, orders.size)
+  }
+
   def getRuntimeSeedStart(side: Side): (Int, BigDecimal, BigDecimal, Boolean) = {
     var isPulledFromOtherSide: Boolean = false
     var levels: Int = 0
@@ -238,8 +257,6 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
       case Side.buy => sortedBuys = sortBuys(buys)
       case Side.sell => sortedSels = sortSels(sels)
       case _ =>
-        sortedBuys = sortBuys(buys)
-        sortedSels = sortSels(sels)
     }
   }
 
