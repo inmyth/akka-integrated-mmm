@@ -1,3 +1,6 @@
+0.0.5
+- specified Application in build.sbt
+
 0.0.4
 - added trim
 - refactored orderbook

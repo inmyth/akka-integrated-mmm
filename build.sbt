@@ -1,11 +1,13 @@
 name := "akka-integrated-mmm"
 
-version := "0.0.4"
+version := "0.0.5"
 
 scalaVersion := "2.12.6"
 
 lazy val akkaHttpVersion = "10.1.3"
 lazy val akkaVersion = "2.5.13"
+
+mainClass in assembly := Some("me.mbcu.integrated.mmm.Application")
 
 scalacOptions := Seq("-unchecked", "-deprecation")
 scalacOptions += "-feature"
