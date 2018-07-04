@@ -16,7 +16,7 @@ class ConfigTest extends FunSuite {
               |                "signature": "super-secret"
               |            },
               |            "pair": "trx_eth",
-              |            "startingPrice" : "lastOwn",
+              |            "seed" : "lastOwn",
               |            "gridSpace": "0.2",
               |            "buyGridLevels": 5,
               |            "sellGridLevels": 5,
