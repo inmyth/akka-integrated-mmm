@@ -48,8 +48,8 @@ object YobitRequest extends AbsRequest {
       "method" -> "Trade",
       "pair" -> pair,
       "type" -> `type`.toString,
-      "rate" -> price.toString,
-      "amount" -> amount.toString
+      "rate" -> price.bigDecimal.toPlainString,
+      "amount" -> amount.bigDecimal.toPlainString
     )
     toYobitParams(params, secret)
   }

@@ -1,3 +1,6 @@
+0.0.6
+- Yobit new offer needed to avoid scientific notation
+
 0.0.5
 - specified Application in build.sbt
 
