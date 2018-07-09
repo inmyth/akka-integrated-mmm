@@ -7,19 +7,21 @@ import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 
 object AbsRestActor {
 
-  class SendRequest
+  trait SendRequest{
+    def as:Option[String]
+  }
 
-  case class GetOrderbook(page: Int) extends SendRequest
+  case class GetOrderbook(page: Int, override val as:Option[String] = None) extends SendRequest
 
-  case class GetTicker() extends SendRequest
+  case class GetTicker(override val as:Option[String] = None) extends SendRequest
 
-  case class GetOwnPastTrades() extends SendRequest
+  case class GetOwnPastTrades(override val as:Option[String] = None) extends SendRequest
 
-  case class CancelOrder(id: String) extends SendRequest
+  case class CancelOrder(id: String, as: Option[String]) extends SendRequest
 
-  case class NewOrder(offer: Offer) extends SendRequest
+  case class NewOrder(offer: Offer, as: Option[String]) extends SendRequest
 
-  case class GetOrderInfo(id: String) extends SendRequest
+  case class GetOrderInfo(id: String, override val as:Option[String] = None) extends SendRequest
 
   case class GotStartPrice(price: Option[BigDecimal])
 

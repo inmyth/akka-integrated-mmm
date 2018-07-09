@@ -14,6 +14,8 @@ object Yobit extends AbsExchange {
 
   override val endpoint: String = "https://yobit.net/api/3/%s/%s"
 
+  override val intervalMillis: Int = 750
+
   val endpointTrade: String = "https://yobit.net/tapi/"
 
   override def getActorRefProps(bot: Bot): Props = Props(new YobitActor(bot))

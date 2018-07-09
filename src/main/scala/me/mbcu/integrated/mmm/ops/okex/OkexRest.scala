@@ -9,6 +9,7 @@ object OkexRest extends AbsExchange {
   val name = Exchange.okexRest
   val protocol = Protocol.rest
   val endpoint = "https://www.okex.com/api/v1"
+  override val intervalMillis: Int = 500
 
   override def getActorRefProps(bot: Bot): Props = Props(new OkexRestActor(bot))
 
@@ -26,4 +27,5 @@ object OkexRest extends AbsExchange {
     10024 -> "balance not sufficient",
     -1000 -> "Server returns html garbage, most likely Cloudflare / SSL issues"
   )
+
 }

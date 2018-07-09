@@ -1,3 +1,7 @@
+0.1.0
+- Refactor OpRestActor, now uses queue for unified request delay
+- Strategy requires ceil and floor on price with its scaling factor
+
 0.0.6
 - Yobit new offer needed to avoid scientific notation
 

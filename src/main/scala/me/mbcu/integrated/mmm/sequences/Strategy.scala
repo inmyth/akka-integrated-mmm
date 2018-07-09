@@ -50,7 +50,7 @@ object Strategy {
           case Strategies.ppt =>
             val mtp = ONE + gridSpace(mc) / CENT
             List.fill(n)(1)
-              .foldLeft(zero)((z, i) => ppt(z.price, z.quantity, amtPwr, mtp, ctrScale, movement))
+              .foldLeft(zero)((z, i) => ppt(z.price, z.quantity, amtPwr, mtp, ctrScale, basScale, movement))
 
           case Strategies.fullfixed =>
             List.fill(n)(1)
@@ -88,8 +88,8 @@ object Strategy {
     seed(qty0, unitPrice0, amtPwr, ctrScale, basScale, symbol, 1, gridSpace, newSide, newAct, isPulledFromOtherSide = false, strategy, isNoQtyCutoff, maxPrice, minPrice)
   }
 
-  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, ctrScale : Int, movement: Movement): PriceQuantity ={
-    val unitPrice1 = if (movement == Movement.DOWN) unitPrice0(mc) / rate else unitPrice0 * rate
+  def ppt(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, rate : BigDecimal, ctrScale : Int, basScale: Int,  movement: Movement): PriceQuantity ={
+    val unitPrice1 = if (movement == Movement.DOWN) roundFloor(unitPrice0(mc) / rate, basScale) else roundCeil(unitPrice0 * rate, basScale)
     val mtpBoost = sqrt(rate) pow amtPower
     val qty1 = if (movement == Movement.DOWN) roundCeil(qty0 * mtpBoost, ctrScale) else roundFloor(qty0(mc) / mtpBoost, ctrScale)
     PriceQuantity(unitPrice1, qty1)
@@ -105,7 +105,7 @@ object Strategy {
     ONE.setScale(ctrScale, BigDecimal.RoundingMode.CEILING)
   }
 
-  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, gridSpace : BigDecimal, ctrScale : Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
+  def calcMid(unitPrice0 : BigDecimal, qty0 : BigDecimal, amtPower : Int, gridSpace : BigDecimal, ctrScale : Int, basScale:Int, side: Side, marketMidPrice : BigDecimal, strategy : Strategies)
   : (BigDecimal, BigDecimal, Int) = {
     var base = PriceQuantity(unitPrice0, qty0)
     var levels = 0
@@ -116,7 +116,7 @@ object Strategy {
         while (base.price < marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base.price, base.quantity, amtPower, mtp, ctrScale, Movement.UP)
+            case Strategies.ppt => base = ppt(base.price, base.quantity, amtPower, mtp, ctrScale, basScale, Movement.UP)
             case _ => base = step(base.price, base.quantity, gridSpace, ctrScale, Movement.UP)
           }
         }
@@ -124,7 +124,7 @@ object Strategy {
         while (base.price > marketMidPrice) {
           levels = levels + 1
           strategy match  {
-            case Strategies.ppt => base = ppt(base.price, base.quantity, amtPower, mtp, ctrScale, Movement.DOWN)
+            case Strategies.ppt => base = ppt(base.price, base.quantity, amtPower, mtp, ctrScale, basScale, Movement.DOWN)
             case _ => base = step(base.price, base.quantity, gridSpace, ctrScale, Movement.DOWN)
           }
         }

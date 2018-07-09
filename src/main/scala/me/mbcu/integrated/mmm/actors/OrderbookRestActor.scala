@@ -18,15 +18,10 @@ import scala.language.postfixOps
 
 object OrderbookRestActor {
 
-  case class PlaceOrders(order : Seq[Offer], as : String)
-
-  case class CheckOrders(ids : Seq[String])
-
-  case class CancelOrders(orders : Seq[Offer], as: String)
-
-  object GetLastTrade
+  case class QueueRequest(a: Seq[SendRequest])
 
 }
+
 class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
   private implicit val ec: ExecutionContextExecutor = global
   var sels: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
@@ -42,14 +37,14 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case "start" =>
       op = Some(sender())
       logCancellable = Some(context.system.scheduler.schedule(15 second, Settings.orderbookLogSeconds.id seconds, self, "log"))
-      sender ! GetOrderbook(1)
+      queueRequest(GetOrderbook(1))
 
     case "log" => info(Offer.dump(sortedBuys, sortedSels))
 
     case GotOrderbook(offers, currentPage, nextPage) =>
       offers.foreach(self ! GotOrderInfo(_))
       if (nextPage) {
-        op.foreach(_ ! GetOrderbook(currentPage + 1))
+        queueRequest(GetOrderbook(currentPage + 1))
       } else {
         self ! "keep or clear orderbook"
       }
@@ -57,11 +52,19 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case "keep or clear orderbook" =>
       bot.seed match {
         case a if a.equalsIgnoreCase(StartingPrice.lastOwn.toString) | a.equalsIgnoreCase(StartingPrice.lastTicker.toString) =>
-          if (sels.isEmpty && buys.isEmpty) self ! "init price" else op.foreach(_ ! cancelOrders((buys ++ sels).toSeq.map(_._2), "Clear orderbook" ))
+          if (sels.isEmpty && buys.isEmpty) self ! "init price" else cancelOrders((buys ++ sels).toSeq.map(_._2), "Clearing orderbook" )
         case _ => self ! "init price"
       }
 
-    case "init price" => op.foreach(_ ! GetLastTrade)
+    case "init price" =>
+      bot.seed match {
+        case s if s contains "last" => s match {
+          case m if m.equalsIgnoreCase(StartingPrice.lastOwn.toString) => queueRequest(GetOwnPastTrades())
+          case m if m.equalsIgnoreCase(StartingPrice.lastTicker.toString) => queueRequest(GetTicker())
+        }
+        case s if s contains "cont" => self ! GotStartPrice(None)
+        case _ => self ! GotStartPrice(Some(BigDecimal(bot.seed)))
+      }
 
     case "refresh orders" =>
       (sels.size, buys.size) match {
@@ -69,16 +72,16 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
         case _ =>
           self ! "balancer"
           if (bot.isStrictLevels) self ! "trim"
-          op.foreach(_ ! CheckOrders((buys ++ sels).toSeq.map(_._1)))
+          queueRequests((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, None)))
       }
 
     case "balancer" =>
       val growth = grow(Side.buy) ++ grow(Side.sell)
-      sendOrders(growth, "balancer")
+      sendOrders(growth, "Balancer")
 
     case "trim" =>
       val trims = trim(Side.buy) ++ trim(Side.sell)
-      cancelOrders(trims, "Level cap")
+      cancelOrders(trims, "Strict cap")
 
     case GotOrderCancelled(id) =>
       resetRefresh()
@@ -90,7 +93,7 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
       price match {
         case Some(p) =>
           val seed = initialSeed(p)
-          sendOrders(seed, "seed")
+          sendOrders(seed, "Seed")
         case _ =>
       }
 
@@ -123,14 +126,18 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
     case "log orderbooks" => info(Offer.dump(sortedBuys, sortedSels))
   }
 
+  def queueRequest(a: SendRequest) : Unit = queueRequests(Seq(a))
+
+  def queueRequests(a: Seq[SendRequest]) : Unit = op foreach(_ ! QueueRequest(a))
+
   def resetRefresh(): Unit ={
     refreshCancellable.foreach(_.cancel())
-    refreshCancellable = Some(context.system.scheduler.scheduleOnce(Settings.int5.id second, self, "refresh orders"))
+    refreshCancellable = Some(context.system.scheduler.scheduleOnce(5 second, self, "refresh orders"))
   }
 
-  def sendOrders(offers: Seq[Offer], as: String): Unit = op foreach(_ ! PlaceOrders(offers, as))
+  def sendOrders(offers: Seq[Offer], as: String): Unit = queueRequests(offers.map(NewOrder(_, Some(as))))
 
-  def cancelOrders(offers: Seq[Offer], as: String): Unit = op foreach(_ ! CancelOrders(offers, as))
+  def cancelOrders(offers: Seq[Offer], as: String): Unit = queueRequests(offers.map(_.id).map(CancelOrder(_, Some(as))))
 
   def sortBoth(): Unit = {
     sort(Side.buy)
@@ -158,21 +165,21 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
 
       case (a, s) if a != 0 && s == 0 =>
         val anyBuy = sortedBuys.head
-        val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, midPrice, bot.strategy)
+        val calcMid = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, bot.baseScale, Side.buy, midPrice, bot.strategy)
         val bl = calcMid._3 - 1
         set(calcMid._1, calcMid._2, calcMid._2, bl, bot.sellGridLevels)
 
       case (a, s) if a == 0 && s != 0 =>
         val anySel = sortedSels.head
-        val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
+        val calcMid = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, bot.baseScale, Side.sell, midPrice, bot.strategy)
         val sl = calcMid._3 - 1
         set(calcMid._1, calcMid._2, calcMid._2, bot.buyGridLevels, sl)
 
       case (a, s) if a != 0 && s != 0 =>
         val anySel = sortedSels.head
-        val calcMidSel = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.sell, midPrice, bot.strategy)
+        val calcMidSel = Strategy.calcMid(anySel.price, anySel.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, bot.baseScale, Side.sell, midPrice, bot.strategy)
         val anyBuy = sortedBuys.head
-        val calcMidBuy = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, Side.buy, calcMidSel._1, bot.strategy)
+        val calcMidBuy = Strategy.calcMid(anyBuy.price, anyBuy.quantity, bot.quantityPower, bot.gridSpace, bot.counterScale, bot.baseScale, Side.buy, calcMidSel._1, bot.strategy)
         val bl = calcMidBuy._3 - 1
         val sl = calcMidSel._3 - 1
         set(calcMidSel._1, calcMidBuy._2, calcMidSel._2, bl, sl)

@@ -11,6 +11,8 @@ abstract class AbsExchange {
 
   def endpoint : String
 
+  def intervalMillis : Int
+
   def getActorRefProps(bot: Bot): Props
 
 }
