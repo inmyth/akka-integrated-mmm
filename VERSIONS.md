@@ -1,3 +1,6 @@
+0.1.1
+- added Fcoin
+
 0.1.0
 - Refactor OpRestActor, now uses queue for unified request delay
 - Strategy requires ceil and floor on price with its scaling factor

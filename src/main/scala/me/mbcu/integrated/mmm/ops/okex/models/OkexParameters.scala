@@ -7,16 +7,6 @@ import me.mbcu.integrated.mmm.ops.okex.models.OkexStatus.OkexStatus
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-//object OkexType extends Enumeration {
-//  type OkexType = Value
-//  val buy, sell = Value
-//
-//  implicit val read = Reads.enumNameReads(OkexType)
-//  implicit val write = Writes.enumNameWrites
-//
-//  def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
-//}
-
 object OkexStatus extends Enumeration {
   type OkexStatus = Value
   val filled = Value(1)
@@ -27,20 +17,6 @@ object OkexStatus extends Enumeration {
     override def writes(enum: OkexStatus) = JsNumber(enum.id)
   }
 }
-
-//object EnumUtils {
-//  def enumReads[E <: Enumeration](enum: E): Reads[E#Value] = new Reads[E#Value] {
-//    def reads(json: JsValue): JsResult[E#Value] = json match {
-//      case JsString(s) =>
-//        try {
-//          JsSuccess(enum.withName(s))
-//        } catch {
-//          case _: NoSuchElementException => JsError(s"Enumeration expected of type: '${enum.getClass}', but it does not appear to contain the value: '$s'")
-//        }
-//      case _ => JsError("String value expected")
-//    }
-//  }
-//}
 
 object OkexParameters {
   val md5: MessageDigest = MessageDigest.getInstance("MD5")
@@ -76,8 +52,6 @@ object OkexParameters {
       (JsPath \ "page_length").readNullable[Int]
       ) (OkexParameters.apply _)
   }
-
-
 
 }
 

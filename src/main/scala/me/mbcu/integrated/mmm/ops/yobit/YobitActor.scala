@@ -1,10 +1,8 @@
 package me.mbcu.integrated.mmm.ops.yobit
 
-import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts.global
 import akka.stream.ActorMaterializer
-import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown, ShutdownCode}
-import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
+import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Bot, Offer, Status}

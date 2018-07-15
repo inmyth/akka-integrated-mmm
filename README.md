@@ -74,6 +74,7 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
 - Apparently it takes a few seconds from order entering the server to get matched in orderbook.
 - ActiveOrder returns only the current amount which might have been partially filled. To get complete info, we still need to call OrderInfo on each order
 
+### fcoin
 
 ## Operation
 

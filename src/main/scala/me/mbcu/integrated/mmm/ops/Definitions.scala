@@ -3,6 +3,7 @@ package me.mbcu.integrated.mmm.ops
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsExchange
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.SendRequest
+import me.mbcu.integrated.mmm.ops.fcoin.Fcoin
 import me.mbcu.integrated.mmm.ops.okex.OkexRest
 import me.mbcu.integrated.mmm.ops.yobit.Yobit
 import me.mbcu.integrated.mmm.sequences.Strategy
@@ -14,7 +15,8 @@ object Definitions {
 
   val exchangeMap = Map[Exchange.Value, AbsExchange](
     Exchange.okexRest -> OkexRest,
-    Exchange.yobit -> Yobit
+    Exchange.yobit -> Yobit,
+    Exchange.fcoin -> Fcoin
   )
 
   object ShutdownCode extends Enumeration {
@@ -25,7 +27,7 @@ object Definitions {
 
   object Exchange extends Enumeration {
     type Exchange = Value
-    val okexRest, yobit = Value
+    val okexRest, yobit, fcoin = Value
 
     implicit val reads = Reads.enumNameReads(Exchange)
     implicit val writes = Writes.enumNameWrites

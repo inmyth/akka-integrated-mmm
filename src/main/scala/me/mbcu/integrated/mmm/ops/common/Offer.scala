@@ -73,13 +73,13 @@ object Offer {
     builder.append(s"buys : ${sortedBuys.size}")
     builder.append(System.getProperty("line.separator"))
     sortedBuys.foreach(b => {
-      builder.append(s"id:${b.id} quantity:${b.quantity} price:${b.price.toString} filled:${b.cumQuantity.get}")
+      builder.append(s"id:${b.id} quantity:${b.quantity.bigDecimal.toPlainString} price:${b.price.bigDecimal.toPlainString} filled:${b.cumQuantity.get.bigDecimal.toPlainString}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.append(s"sells : ${sortedSels.size}")
     builder.append(System.getProperty("line.separator"))
     sortedSels.foreach(s => {
-      builder.append(s"id:${s.id} quantity:${s.quantity} price:${s.price.toString} filled:${s.cumQuantity.get}")
+      builder.append(s"id:${s.id} quantity:${s.quantity.bigDecimal.toPlainString} price:${s.price.bigDecimal.toPlainString} filled:${s.cumQuantity.get.bigDecimal.toPlainString}")
       builder.append(System.getProperty("line.separator"))
     })
     builder.toString()

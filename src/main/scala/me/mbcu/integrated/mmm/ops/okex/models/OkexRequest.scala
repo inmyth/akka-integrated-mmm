@@ -131,7 +131,7 @@ object OkexRequest extends AbsRequest{
 
   val sign : (String, OkexParameters) => String = (secret, params) => {
     val a = Json.toJson(params).as[JsObject]
-    val b = a.fields.sortBy(_._1).map(c => s"""${c._1.toString}=${c._2}""").reduce((l, r) => s"""$l&$r""")
+    val b = a.fields.sortBy(_._1).map(c => s"${c._1.toString}=${c._2}").reduce((l, r) => s"$l&$r")
     val d = s"""$b&secret_key=$secret""".replace("\"", "")
     md5(secret, d)
   }

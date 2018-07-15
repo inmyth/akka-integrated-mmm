@@ -71,9 +71,7 @@ object Strategy {
         case Some(mp) => _.price <= mp
         case None => _.price < INFINITY
       })
-      .map(p1q1 => {
-        Offer.newOffer(symbol, side, p1q1.price, p1q1.quantity.setScale(basScale, RoundingMode.HALF_EVEN))
-      })
+      .map(p1q1 => Offer.newOffer(symbol, side, p1q1.price, p1q1.quantity.setScale(ctrScale, RoundingMode.HALF_EVEN)))
   }
 
   case class PriceQuantity(price : BigDecimal, quantity: BigDecimal)

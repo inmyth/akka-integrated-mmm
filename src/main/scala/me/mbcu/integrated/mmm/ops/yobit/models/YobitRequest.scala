@@ -16,7 +16,7 @@ object YobitRequest extends AbsRequest {
 
   def toYobitParams(params : Map[String, String], secret: String) : YobitParams = {
     val withNonce = body(addNonce(params))
-    YobitParams(signHmacSHA512(isCapital = false, secret, withNonce), withNonce)
+    YobitParams(toHex(signHmacSHA512(secret, withNonce), false), withNonce)
   }
 
   def ownTrades(credentials: Credentials, pair: String) : YobitParams = ownTrades( credentials.signature, pair )
