@@ -11,7 +11,7 @@ object OkexRest extends AbsExchange {
   val endpoint = "https://www.okex.com/api/v1"
   override val intervalMillis: Int = 500
 
-  override def getActorRefProps(bot: Bot): Props = Props(new OkexRestActor(bot))
+  override def getActorRefProps: Props = Props(new OkexRestActor())
 
   val OKEX_ERRORS = Map(
     1002 -> "The transaction amount exceed the balance",

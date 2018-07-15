@@ -13,6 +13,6 @@ abstract class AbsExchange {
 
   def intervalMillis : Int
 
-  def getActorRefProps(bot: Bot): Props
+  def getActorRefProps: Props
 
 }

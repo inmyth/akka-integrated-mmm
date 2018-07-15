@@ -6,7 +6,7 @@ trait MyLogging {
 
   def info(s :String) : Unit = MyLoggingSingle.log.info(s)
 
-  def warn(s : String) : Unit =MyLoggingSingle.log.warning(s)
+  def warn(s : String) : Unit = MyLoggingSingle.log.warning(s)
 
   def debug(s : String) : Unit = MyLoggingSingle.log.fine(s)
 }

@@ -22,7 +22,7 @@ object OrderbookRestActor {
 
 }
 
-class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
+class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
   private implicit val ec: ExecutionContextExecutor = global
   var sels: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
   var buys: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
@@ -31,6 +31,8 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
   var refreshCancellable: Option[Cancellable] = None
   var logCancellable: Option[Cancellable] = None
   private var op: Option[ActorRef] = None
+  private implicit val book: ActorRef = self
+  private implicit val imBot: Bot = bot
 
   def receive: Receive = {
 
@@ -94,8 +96,11 @@ class OrderbookRestActor(bot:Bot) extends Actor with MyLogging {
         case Some(p) =>
           val seed = initialSeed(p)
           sendOrders(seed, "Seed")
-        case _ =>
+        case _ => error(s"OpRest#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
+
       }
+
+    case a : GotOrderId => queueRequest(GetOrderInfo(a.id))
 
     case GotOrderInfo(offer) =>
       resetRefresh()

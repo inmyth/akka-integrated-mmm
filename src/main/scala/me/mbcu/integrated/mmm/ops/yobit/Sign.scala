@@ -1,7 +1,6 @@
 package me.mbcu.integrated.mmm.ops.yobit
 
 import me.mbcu.integrated.mmm.ops.common.Side
-import me.mbcu.integrated.mmm.ops.yobit.models.YobitRequest
 
 object Sign extends App {
 

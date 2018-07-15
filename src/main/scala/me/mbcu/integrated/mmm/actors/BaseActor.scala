@@ -55,16 +55,15 @@ class BaseActor(configPath: String) extends Actor with MyLogging {
     }
 
     case "init" =>
-      config.foreach(_.bots.zipWithIndex.foreach{
-        case (b, i) =>
-          val excDef = Definitions.exchangeMap(b.exchange)
-          val props =
+      config.foreach(c => Config.groupBots(c.bots).zipWithIndex.foreach {
+        case (b, i) => val excDef = Definitions.exchangeMap(b._1)
+        val props =
           excDef.protocol match {
-            case Protocol.rest => Props(new OpRestActor(b, excDef))
+            case Protocol.rest => Props(new OpRestActor(excDef, b._2))
             case Protocol.ws => Props(new OpWsActor())
           }
-          val botActor = context.actorOf(props, botName.format(i))
-          botActor ! "start"
+          val opActor = context.actorOf(props, botName.format(i))
+          opActor ! "start"
       })
 
     case ErrorShutdown(shutdown, code, msg) => ses foreach(_ ! CacheMessages(msg, Some(shutdown.id)))

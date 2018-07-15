@@ -18,7 +18,7 @@ object Yobit extends AbsExchange {
 
   val endpointTrade: String = "https://yobit.net/tapi/"
 
-  override def getActorRefProps(bot: Bot): Props = Props(new YobitActor(bot))
+  override def getActorRefProps: Props = Props(new YobitActor())
 
   val nonceFactor : Long = 1530165626000l // some random ts June 28
 }

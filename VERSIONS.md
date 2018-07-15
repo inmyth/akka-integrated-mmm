@@ -1,3 +1,8 @@
+0.2.0
+- grouped all bot of same exchanges with one sender sequence
+- created ConfigTest for groupBots
+- refactored OpActor, OrderbookActor. Orderbook now sends orders to Op's queue but gets the results directly from RestActor
+
 0.1.1
 - added Fcoin
 

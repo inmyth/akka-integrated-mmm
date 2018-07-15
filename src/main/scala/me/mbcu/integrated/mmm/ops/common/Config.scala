@@ -1,5 +1,6 @@
 package me.mbcu.integrated.mmm.ops.common
 
+import me.mbcu.integrated.mmm.ops.Definitions.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Exchange.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Strategies.Strategies
 import play.api.libs.functional.syntax._
@@ -119,5 +120,13 @@ case class Config(env: Env, bots: List[Bot])
 
 object Config {
   implicit val jsonFormat: OFormat[Config] = Json.format[Config]
+
+  def groupBots(bots: Seq[Bot]) : Map[Exchange , Seq[Bot]] = {
+    bots.map(p => (p.exchange, p.pair) -> p)
+      .groupBy(_._1)
+      .mapValues(_.map(_._2).head)
+      .groupBy(_._1._1)
+      .mapValues(_.values.toList)
+  }
 }
 

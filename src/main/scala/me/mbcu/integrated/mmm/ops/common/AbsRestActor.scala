@@ -9,19 +9,21 @@ object AbsRestActor {
 
   trait SendRequest{
     def as:Option[String]
+    def bot: Bot
+    def book: ActorRef
   }
 
-  case class GetOrderbook(page: Int, override val as:Option[String] = None) extends SendRequest
+  case class GetOrderbook(page: Int, override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetTicker(override val as:Option[String] = None) extends SendRequest
+  case class GetTicker(override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOwnPastTrades(override val as:Option[String] = None) extends SendRequest
+  case class GetOwnPastTrades(override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class CancelOrder(id: String, as: Option[String]) extends SendRequest
+  case class CancelOrder(id: String, as: Option[String])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class NewOrder(offer: Offer, as: Option[String]) extends SendRequest
+  case class NewOrder(offer: Offer, as: Option[String])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOrderInfo(id: String, override val as:Option[String] = None) extends SendRequest
+  case class GetOrderInfo(id: String, override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
   case class GotStartPrice(price: Option[BigDecimal])
 
@@ -37,7 +39,7 @@ object AbsRestActor {
 
 }
 
-abstract class AbsRestActor(bot: Bot) extends Actor {
+abstract class AbsRestActor() extends Actor {
   var op : Option[ActorRef] = None
 
   def sendRequest(r: SendRequest)

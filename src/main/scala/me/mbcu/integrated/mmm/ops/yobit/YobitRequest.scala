@@ -1,8 +1,7 @@
-package me.mbcu.integrated.mmm.ops.yobit.models
+package me.mbcu.integrated.mmm.ops.yobit
 
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRequest, Credentials}
-import me.mbcu.integrated.mmm.ops.yobit.Yobit
 
 object YobitRequest extends AbsRequest {
 
@@ -16,7 +15,7 @@ object YobitRequest extends AbsRequest {
 
   def toYobitParams(params : Map[String, String], secret: String) : YobitParams = {
     val withNonce = body(addNonce(params))
-    YobitParams(toHex(signHmacSHA512(secret, withNonce), false), withNonce)
+    YobitParams(toHex(signHmacSHA512(secret, withNonce), isCapital = false), withNonce)
   }
 
   def ownTrades(credentials: Credentials, pair: String) : YobitParams = ownTrades( credentials.signature, pair )

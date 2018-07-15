@@ -16,5 +16,5 @@ object Fcoin extends AbsExchange {
 
   override def intervalMillis: Int = 800
 
-  override def getActorRefProps(bot: Bot): Props = Props(new FcoinActor(bot))
+  override def getActorRefProps: Props = Props(new FcoinActor())
 }
