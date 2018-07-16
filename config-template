@@ -1,0 +1,52 @@
+{
+     "env": {
+         "emails" : ["youremail@errorreport.com"],
+         "sesKey" : "seskey",
+         "sesSecret" : "sessecret",
+         "logSeconds" : 10
+     },
+     "bots" : [
+          {
+              "exchange" : "yobit",
+              "credentials" : {
+                  "pKey" : "apikeyWithTradeAllowed",
+                  "nonce" : "",
+                  "signature": "secret"
+              },
+              "pair": "noah_btc",
+              "seed" : "lastTicker",
+              "gridSpace": "0.5",
+              "buyGridLevels":3,
+              "sellGridLevels": 0,
+              "buyOrderQuantity": "3000",
+              "sellOrderQuantity": "3000",
+              "quantityPower" : 2,
+              "counterScale" : 0,
+              "baseScale" : 8,
+              "isStrictLevels" : true,
+              "isNoQtyCutoff" : true,
+              "strategy" : "ppt"
+          },
+           {
+               "exchange" : "yobit",
+               "credentials" : {
+                   "pKey" : "apikeyWithTradeAllowed",
+                   "nonce" : "",
+                   "signature": "secret"
+               },
+               "pair": "noah_eth",
+               "seed" : "lastTicker",
+               "gridSpace": "0.5",
+               "buyGridLevels":3,
+               "sellGridLevels": 0,
+               "buyOrderQuantity": "3000",
+               "sellOrderQuantity": "3000",
+               "quantityPower" : 2,
+               "counterScale" :0,
+               "baseScale" : 8,
+               "isStrictLevels" : true,
+               "isNoQtyCutoff" : true,
+               "strategy" : "ppt"
+           }
+     ]
+ }

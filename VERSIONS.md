@@ -1,3 +1,7 @@
+0.2.1
+- cleaned up codes
+- add docs and template
+
 0.2.0
 - grouped all bot of same exchanges with one sender sequence
 - created ConfigTest for groupBots
