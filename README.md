@@ -2,9 +2,9 @@
 
 An automated grid/ping-pong market-making bot supporting various exchanges.
 
-[Exchanges and the handling](./EXCHANGES)
+[Exchanges and the handling](./EXCHANGES.md)
 
-[Version notes](./VERSIONS)
+[Version notes](./VERSIONS.md)
 
 ## Operation
 
@@ -46,7 +46,7 @@ java -jar program.jar <path to config file> <path to log directory>
 
 Type: `string`<br>
 
-Name of the exchange. See [Exchanges](./EXCHANGES) for supported exchanges.
+Name of the exchange. See [Exchanges](./EXCHANGES.md) for supported exchanges.
 
 #### credentials
 
