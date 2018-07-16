@@ -47,7 +47,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
     case QueueRequest(seq) => q ++= seq
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
-      if (shouldEmail) base foreach(_ ! ErrorRetryRest(sendRequest, code, msg))
+      base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
       q += sendRequest
 
     case a : ErrorShutdown => base foreach(_ ! a)
