@@ -22,7 +22,7 @@ Bot should be started or restarted when
 2. an irrecoverable error occurs (wrong api/secret, user ban, permanent endpoint change)
 
 ## To Use
-Use [template](./config-template) as reference.
+Use [config-template](./config-template) as config reference.
 
 One bot in [bots] will market-make on one pair.
 
