@@ -50,7 +50,7 @@ abstract class AbsRestActor() extends Actor {
 
   def url: String
 
-  def errorRetry(sendRequest: SendRequest, code: Int, msg: String): Unit = op foreach (_ ! ErrorRetryRest(sendRequest, code, msg))
+  def errorRetry(sendRequest: SendRequest, code: Int, msg: String, shouldEmail: Boolean = true): Unit = op foreach (_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
 
   def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach (_ ! ErrorShutdown(shutdownCode, code, msg))
 

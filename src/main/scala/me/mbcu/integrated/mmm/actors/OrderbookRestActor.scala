@@ -114,7 +114,7 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
           remove(offer.side, offer.id)
           sort(offer.side)
           val counters = counter(offer)
-          sendOrders(counters, "counter")
+          sendOrders(counters, as = "Counter")
 
         case Some(Status.partialFilled) =>
           add(offer)

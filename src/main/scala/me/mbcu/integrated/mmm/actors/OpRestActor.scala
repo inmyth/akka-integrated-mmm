@@ -40,14 +40,14 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case "dequeue" => if (q.nonEmpty) {
       val next = q.dequeue()
-      info(s"${exchangeDef.name} / ${next.bot.pair} : ${next.as}")
+      info(s"${exchangeDef.name} / ${next.bot.pair} : ${next.as.getOrElse("")}")
       rest foreach(_ ! next)
     }
 
     case QueueRequest(seq) => q ++= seq
 
-    case ErrorRetryRest(sendRequest, code, msg) =>
-      base foreach(_ ! ErrorRetryRest(sendRequest, code, msg))
+    case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
+      if (shouldEmail) base foreach(_ ! ErrorRetryRest(sendRequest, code, msg))
       q += sendRequest
 
     case a : ErrorShutdown => base foreach(_ ! a)

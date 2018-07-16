@@ -9,9 +9,9 @@ object YobitRequest extends AbsRequest {
 
   def nonce : Long = System.currentTimeMillis() - Yobit.nonceFactor
 
-  val addNonce: Map[String, String] => Map[String, String] = (params: Map[String, String]) => params + ("nonce" -> nonce.toString)
+  def addNonce(params: Map[String, String]): Map[String, String] = params + ("nonce" -> nonce.toString)
 
-  val body: Map[String, String] => String = (params: Map[String, String]) => params.toSeq.sortBy(_._1).map(v => s"${v._1}=${v._2}").mkString("&")
+  def body(params: Map[String, String]): String = params.toSeq.sortBy(_._1).map(v => s"${v._1}=${v._2}").mkString("&")
 
   def toYobitParams(params : Map[String, String], secret: String) : YobitParams = {
     val withNonce = body(addNonce(params))
@@ -81,6 +81,5 @@ object YobitRequest extends AbsRequest {
     )
     toYobitParams(params, secret)
   }
-
 
 }

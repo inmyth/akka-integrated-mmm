@@ -1,3 +1,6 @@
+0.2.3
+- make errorRetry's send email optional
+
 0.2.2
 - added exchange and pair in log orderbook
 

@@ -127,7 +127,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
               case 0 =>
                 val msg = (js \ "error").as[String]
                 msg match {
-                  case m if m.contains("invalid nonce (has already been used)") => errorRetry(a, 0, m)
+                  case m if m.contains("invalid nonce (has already been used)") => errorRetry(a, 0, m, shouldEmail = false)
                   case m if m.contains("invalid sign") | m.contains("invalid key, sign, method or nonce") =>
                     errorShutdown(ShutdownCode.fatal, 0, s"$request $m")
                   case m if m.contains("The given order has already been cancelled.") => errorIgnore(0, msg)
