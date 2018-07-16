@@ -1,3 +1,6 @@
+0.2.2
+- added exchange and pair in log orderbook
+
 0.2.1
 - cleaned up codes
 - add docs and template

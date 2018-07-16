@@ -38,10 +38,10 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
     case "start" =>
       op = Some(sender())
-      logCancellable = Some(context.system.scheduler.schedule(15 second, Settings.orderbookLogSeconds.id seconds, self, "log"))
+      logCancellable = Some(context.system.scheduler.schedule(15 second, Settings.orderbookLogSeconds.id seconds, self, message="log"))
       queueRequest(GetOrderbook(1))
 
-    case "log" => info(Offer.dump(sortedBuys, sortedSels))
+    case "log" => info(Offer.dump(bot, sortedBuys, sortedSels))
 
     case GotOrderbook(offers, currentPage, nextPage) =>
       offers.foreach(self ! GotOrderInfo(_))
@@ -128,7 +128,6 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
       }
 
-    case "log orderbooks" => info(Offer.dump(sortedBuys, sortedSels))
   }
 
   def queueRequest(a: SendRequest) : Unit = queueRequests(Seq(a))
