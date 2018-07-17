@@ -10,7 +10,7 @@ object AbsRestActor {
 
   object As extends Enumeration {
     type As = Value
-    val Seed, Reseed, Trim, Counter, ClearOpenOrders = Value
+    val Seed, Trim, Counter, ClearOpenOrders, RoutineCheck = Value
   }
 
   trait SendRequest{
@@ -29,11 +29,11 @@ object AbsRestActor {
 
   case class NewOrder(offer: Offer, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOrderInfo(id: String, override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetOrderInfo(id: String, override val as:Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
   case class GotStartPrice(price: Option[BigDecimal])
 
-  case class GotOrderId(id: String)
+  case class GotOrderId(id: String, as: Option[As])
 
   case class GotOrderInfo(offer: Offer)
 

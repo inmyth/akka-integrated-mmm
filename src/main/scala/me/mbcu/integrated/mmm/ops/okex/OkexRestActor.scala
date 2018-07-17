@@ -112,7 +112,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
               val nextPage = if ((js \ "page_length").as[Int] > 200) true else false
               book ! GotOrderbook(res, currentPage, nextPage)
 
-            case t: NewOrder => book ! GotOrderId((js \ "order_id").as[Long].toString)
+            case t: NewOrder => book ! GotOrderId((js \ "order_id").as[Long].toString, t.as)
 
             case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String])
 

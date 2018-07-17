@@ -148,7 +148,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
             case a: NewOrder =>
               val id = data.as[String]
-              a.book ! GotOrderId(id)
+              a.book ! GotOrderId(id, a.as)
 
             case a: CancelOrder => a.book ! GotOrderCancelled(a.id)
 

@@ -60,9 +60,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
   }
 
   def isInQueue(bot: Bot, ass: Seq[As]): Boolean = {
-    def isInQueue(as: As): Boolean = {
-      q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).exists(_.as == as)
-    }
+    def isInQueue(as: As): Boolean = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).contains(as)
     if (q.isEmpty) false else ass.map(isInQueue).forall(_ == true)
   }
 

@@ -142,7 +142,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
                   case t: GetOwnPastTrades => book ! GotStartPrice(YobitActor.parseLastOwnTradePrice(js))
 
-                  case t: NewOrder => book ! GotOrderId(YobitActor.parseForOrderId(js))
+                  case t: NewOrder => book ! GotOrderId(YobitActor.parseForOrderId(js), t.as)
 
                   case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js))
 

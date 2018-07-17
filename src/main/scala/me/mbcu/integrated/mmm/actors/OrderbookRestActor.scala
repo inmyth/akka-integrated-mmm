@@ -73,18 +73,18 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
     case "refresh orders" =>
       (sels.size, buys.size) match {
-        case (0,0) => op.foreach(_ ! CheckInQueue(Seq(As.Reseed, As.Seed, As.Counter, As.ClearOpenOrders), "init price"))   // self ! "init price"
+        case (0,0) => op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "init price"))   // self ! "init price"
         case _ =>
-          op.foreach(_ ! CheckInQueue(Seq(As.Reseed, As.Seed), "reseed"))   // self ! "reseed"
+          op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.Trim), "reseed"))   // self ! "reseed"
           if (bot.isStrictLevels) op.foreach(_ ! CheckInQueue(Seq(As.Trim), "trim")) // self ! "trim"
           self ! "check open orders"
       }
 
-    case "check open orders" => queueRequests((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, None)))
+    case "check open orders" => queueRequests((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, Some(As.RoutineCheck))))
 
     case "reseed" =>
       val growth = grow(Side.buy) ++ grow(Side.sell)
-      sendOrders(growth, As.Reseed)
+      sendOrders(growth, As.Seed)
 
     case "trim" =>
       val trims = trim(Side.buy) ++ trim(Side.sell)
@@ -105,7 +105,7 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
       }
 
-    case a : GotOrderId => queueRequest(GetOrderInfo(a.id))
+    case a : GotOrderId => queueRequest(GetOrderInfo(a.id, a.as))
 
     case GotOrderInfo(offer) =>
       resetRefresh()

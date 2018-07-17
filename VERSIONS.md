@@ -1,3 +1,8 @@
+0.3.4
+- fixed wrong isInQueue
+- enumerized As
+- all request should have As. Refresh orders will first check As in queue along with GetOrderInfo which sets off after NewOrder
+
 0.3.3
 - do check on request sequence whenever "refresh order" is called. This should prevent double orders, possibly caused by balancer ("reseed") called when the queue still has reseed orders.
 - if not ok, check the Strategy for reseed
