@@ -69,7 +69,7 @@ object Offer {
   def dump(bot: Bot, sortedBuys: Seq[Offer], sortedSels: Seq[Offer]) : String = {
     val builder = StringBuilder.newBuilder
     builder.append(System.getProperty("line.separator"))
-    builder.append(s"${bot.exchange}: ${bot.pair}")
+    builder.append(s"Open Orders ${bot.exchange}: ${bot.pair}")
     builder.append(System.getProperty("line.separator"))
     builder.append(s"buys : ${sortedBuys.size}")
     builder.append(System.getProperty("line.separator"))

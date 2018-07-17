@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.Settings
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common._
@@ -19,6 +20,8 @@ import scala.language.postfixOps
 object OrderbookRestActor {
 
   case class QueueRequest(a: Seq[SendRequest])
+
+  case class CheckInQueue(ass: Seq[As], msg: String)(implicit val book: ActorRef, implicit val bot: Bot)
 
 }
 
@@ -54,7 +57,7 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
     case "keep or clear orderbook" =>
       bot.seed match {
         case a if a.equalsIgnoreCase(StartingPrice.lastOwn.toString) | a.equalsIgnoreCase(StartingPrice.lastTicker.toString) =>
-          if (sels.isEmpty && buys.isEmpty) self ! "init price" else cancelOrders((buys ++ sels).toSeq.map(_._2), "Clearing orderbook" )
+          if (sels.isEmpty && buys.isEmpty) self ! "init price" else cancelOrders((buys ++ sels).toSeq.map(_._2), As.ClearOpenOrders)
         case _ => self ! "init price"
       }
 
@@ -70,20 +73,22 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
     case "refresh orders" =>
       (sels.size, buys.size) match {
-        case (0,0) => self ! "init price"
+        case (0,0) => op.foreach(_ ! CheckInQueue(Seq(As.Reseed, As.Seed, As.Counter, As.ClearOpenOrders), "init price"))   // self ! "init price"
         case _ =>
-          self ! "balancer"
-          if (bot.isStrictLevels) self ! "trim"
-          queueRequests((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, None)))
+          op.foreach(_ ! CheckInQueue(Seq(As.Reseed, As.Seed), "reseed"))   // self ! "reseed"
+          if (bot.isStrictLevels) op.foreach(_ ! CheckInQueue(Seq(As.Trim), "trim")) // self ! "trim"
+          self ! "check open orders"
       }
 
-    case "balancer" =>
+    case "check open orders" => queueRequests((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, None)))
+
+    case "reseed" =>
       val growth = grow(Side.buy) ++ grow(Side.sell)
-      sendOrders(growth, "Balancer")
+      sendOrders(growth, As.Reseed)
 
     case "trim" =>
       val trims = trim(Side.buy) ++ trim(Side.sell)
-      cancelOrders(trims, "Strict cap")
+      cancelOrders(trims, As.Trim)
 
     case GotOrderCancelled(id) =>
       resetRefresh()
@@ -95,7 +100,7 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
       price match {
         case Some(p) =>
           val seed = initialSeed(p)
-          sendOrders(seed, "Seed")
+          sendOrders(seed, As.Seed)
         case _ => error(s"OpRest#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
 
       }
@@ -114,7 +119,7 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
           remove(offer.side, offer.id)
           sort(offer.side)
           val counters = counter(offer)
-          sendOrders(counters, as = "Counter")
+          sendOrders(counters, as = As.Counter)
 
         case Some(Status.partialFilled) =>
           add(offer)
@@ -139,9 +144,9 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
     refreshCancellable = Some(context.system.scheduler.scheduleOnce(5 second, self, "refresh orders"))
   }
 
-  def sendOrders(offers: Seq[Offer], as: String): Unit = queueRequests(offers.map(NewOrder(_, Some(as))))
+  def sendOrders(offers: Seq[Offer], as: As): Unit = queueRequests(offers.map(NewOrder(_, Some(as))))
 
-  def cancelOrders(offers: Seq[Offer], as: String): Unit = queueRequests(offers.map(_.id).map(CancelOrder(_, Some(as))))
+  def cancelOrders(offers: Seq[Offer], as: As): Unit = queueRequests(offers.map(_.id).map(CancelOrder(_, Some(as))))
 
   def sortBoth(): Unit = {
     sort(Side.buy)

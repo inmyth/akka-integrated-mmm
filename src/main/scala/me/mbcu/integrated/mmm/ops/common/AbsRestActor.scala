@@ -3,27 +3,33 @@ package me.mbcu.integrated.mmm.ops.common
 import akka.actor.{Actor, ActorRef}
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 
 object AbsRestActor {
 
+  object As extends Enumeration {
+    type As = Value
+    val Seed, Reseed, Trim, Counter, ClearOpenOrders = Value
+  }
+
   trait SendRequest{
-    def as:Option[String]
+    def as:Option[As]
     def bot: Bot
     def book: ActorRef
   }
 
-  case class GetOrderbook(page: Int, override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetOrderbook(page: Int, override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetTicker(override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetTicker(override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOwnPastTrades(override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetOwnPastTrades(override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class CancelOrder(id: String, as: Option[String])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class CancelOrder(id: String, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class NewOrder(offer: Offer, as: Option[String])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class NewOrder(offer: Offer, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOrderInfo(id: String, override val as:Option[String] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetOrderInfo(id: String, override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
   case class GotStartPrice(price: Option[BigDecimal])
 

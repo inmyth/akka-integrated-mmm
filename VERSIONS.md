@@ -1,3 +1,8 @@
+0.3.3
+- do check on request sequence whenever "refresh order" is called. This should prevent double orders, possibly caused by balancer ("reseed") called when the queue still has reseed orders.
+- if not ok, check the Strategy for reseed
+NOTE: even more secure way is not to pop the request from the queue but remove it once the request has been executed and returned response.
+
 0.2.3
 - make errorRetry's send email optional
 

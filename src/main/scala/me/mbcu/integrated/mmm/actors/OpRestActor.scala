@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging
@@ -46,6 +47,8 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case QueueRequest(seq) => q ++= seq
 
+    case a : CheckInQueue => if (!isInQueue(a.bot, a.ass)) a.book ! a.msg
+
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
       base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
       q += sendRequest
@@ -54,6 +57,13 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case a : ErrorIgnore => base foreach(_ ! a)
 
+  }
+
+  def isInQueue(bot: Bot, ass: Seq[As]): Boolean = {
+    def isInQueue(as: As): Boolean = {
+      q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).exists(_.as == as)
+    }
+    if (q.isEmpty) false else ass.map(isInQueue).forall(_ == true)
   }
 
 }
