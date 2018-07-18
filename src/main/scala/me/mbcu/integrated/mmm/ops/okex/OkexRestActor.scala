@@ -82,7 +82,9 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
 
   def parse(a: SendRequest, raw: String): Unit = {
     info(
-      s"""Response:
+      s"""
+         |Request: As: ${a.as.getOrElse("")}, ${a.bot.exchange} : ${a.bot.pair}
+         |Response:
          |$raw
        """.stripMargin)
 

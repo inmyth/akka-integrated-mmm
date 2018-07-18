@@ -1,3 +1,8 @@
+0.3.5
+- doubles were caused by GotOrderInfo's starting refresh before orderbook init was complete (startPrice not yet available)
+    - fixed by not launching refresh if the cancellable is None.
+- changed isInQueue
+
 0.3.4
 - fixed wrong isInQueue
 - enumerized As

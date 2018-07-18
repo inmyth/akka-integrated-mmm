@@ -23,7 +23,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
   private var base: Option[ActorRef] = None
   private var rest: Option[ActorRef] = None
   private var dqCancellable: Option[Cancellable] = None
-  private val q = new mutable.Queue[SendRequest]
+  private val q = new scala.collection.mutable.Queue[SendRequest]
 
   override def receive: Receive = {
 
@@ -41,13 +41,13 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case "dequeue" => if (q.nonEmpty) {
       val next = q.dequeue()
-      info(s"${exchangeDef.name} / ${next.bot.pair} : ${next.as.getOrElse("")}")
+//      info(s"Popping ${exchangeDef.name} / ${next.bot.pair} : ${next.as.getOrElse("")}")
       rest foreach(_ ! next)
     }
 
     case QueueRequest(seq) => q ++= seq
 
-    case a : CheckInQueue => if (!isInQueue(a.bot, a.ass)) a.book ! a.msg
+    case a : CheckInQueue => if (isNotInQueue(a.bot, a.ass)) a.book ! a.msg
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
       base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
@@ -59,9 +59,10 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
   }
 
-  def isInQueue(bot: Bot, ass: Seq[As]): Boolean = {
-    def isInQueue(as: As): Boolean = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).contains(as)
-    if (q.isEmpty) false else ass.map(isInQueue).forall(_ == true)
+  def isNotInQueue(bot: Bot, ass: Seq[As]): Boolean = {
+    val qs = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
+    ass.map(qs.contains(_)).forall(_ == false)
+//    if (q.isEmpty) true else ass.map(isInQueue).forall(_ == false)
   }
 
 }

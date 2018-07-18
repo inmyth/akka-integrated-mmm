@@ -111,7 +111,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
   def parse(a: AbsRestActor.SendRequest, request: String, raw: String): Unit = {
     info(
       s"""
-         |Request: $request
+         |Request: $request, As: ${a.as.getOrElse("")}, ${a.bot.exchange} : ${a.bot.pair}
          |Response:
          |$raw
        """.stripMargin)
