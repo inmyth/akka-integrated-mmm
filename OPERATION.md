@@ -20,7 +20,7 @@ Operation here is divided by two: initialization and normal.
 
 During initialization bot will retrieve active orders from the exchange. Depending on the strategy, it will immediately start (by calling `maintain`) or clear the orderbook first and reseed it.
 
-All callbacks in Orderbooks except GetOrderInfo are used during initialization.
+All callbacks in Orderbooks except GetOpenOrderInfo are used during initialization.
 
 
 ### Maintain
@@ -30,7 +30,7 @@ Maintain grows (replacing missing levels) or trim (cancelling overgrown levels) 
 Grow cannot be started at the same time as Counter because it might read from empty buys / sels during seeding, produces incorrect seeds if there are multiple counters.
 
 
-## Rest
+### Queue
 
 To avoid API limit, the bot groups together all requests to a same exchange in a queue. The queue is popped at fixed interval.
 
@@ -38,6 +38,10 @@ Open orders are checked regularly. If through GetInfo API an order is found fill
 
 There are possible race problems: if requests are pushed too fast into queue, some identical requests may get executed. If this request if GetOrderInfo for a filled order, the bot will counter and seed multiple times.
 So GetInfo with an orderId will only be pushed if there's no similar request in queue.
+
+Also all REST exchanges have the same characteristic: new order request will only return its id, not its status. So another call is needed to get the info.
+
+So all new orders are also put in a set while waiting the get info request to complete. Any new seeds from Orderbook will also take into count pending orders in this set since those orders have not been registered in the orderbook.
 
 
 ## Future work

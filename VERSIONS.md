@@ -1,3 +1,7 @@
+0.3.7
+- solution 0.3.6 was not perfect. After receiving a new order id, this id must be queried again with GetInfo. During this duration, there was a hole where `CheckInQueue` cannot find any pending orders. This caused multiple to be pushed.
+    - OpRest now holds a set to hold pending NewOrders or successful new orders that are still waiting for their info. `CheckInQueue` will also check any pending orders here. 
+
 0.3.6
 - doubles were caused by multiple GetOrderInfo (with same id) being queued too many times (order check just keeps pushing new requests every interval). If multiple GetOrderInfo check a same filled order then the bot will create more than one counter.
     - fixed it by removing inbound GetOrderInfo requests which have the same order Id as the ones in queue.

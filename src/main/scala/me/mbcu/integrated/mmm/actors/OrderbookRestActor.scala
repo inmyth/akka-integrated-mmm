@@ -23,7 +23,7 @@ object OrderbookRestActor {
 
   case class CheckInQueue(ass: Seq[As], msg: String)(implicit val book: ActorRef, implicit val bot: Bot)
 
-  case class QueueGetOrderInfo(batch: Seq[GetOrderInfo])(implicit val book: ActorRef, implicit val bot: Bot)
+  case class QueueGetOpenOrderInfo(batch: Seq[GetOpenOrderInfo])(implicit val book: ActorRef, implicit val bot: Bot)
 
 }
 
@@ -38,7 +38,6 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
   private var op: Option[ActorRef] = None
   private implicit val book: ActorRef = self
   private implicit val imBot: Bot = bot
-  //  private var isInitDone = false
 
   def receive: Receive = {
 
@@ -63,7 +62,6 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
         case a if a.equalsIgnoreCase(StartingPrice.lastOwn.toString) | a.equalsIgnoreCase(StartingPrice.lastTicker.toString) =>
           if (sels.isEmpty && buys.isEmpty) self ! "init price" else cancelOrders((buys ++ sels).toSeq.map(_._2), As.ClearOpenOrders)
         case _ =>
-          //          isInitDone = true
           maintain()
           info(s"Book ${bot.exchange} ${bot.pair} : ${bot.seed} ")
       }
@@ -81,11 +79,10 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
     case "maintain" =>
       (sels.size, buys.size) match {
         case (0,0) =>
-          //          isInitDone = false
           op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "init price"))
         case _ =>
           op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "reseed"))
-          op.foreach(_ ! QueueGetOrderInfo((buys ++ sels).toSeq.map(_._1).map(GetOrderInfo(_, Some(As.RoutineCheck)))))
+          op.foreach(_ ! QueueGetOpenOrderInfo((buys ++ sels).toSeq.map(_._1).map(GetOpenOrderInfo(_, Some(As.RoutineCheck)))))
           if (bot.isStrictLevels) op.foreach(_ ! CheckInQueue(Seq(As.Trim), "trim"))
       }
 
@@ -111,15 +108,12 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
       price match {
         case Some(p) =>
           info(s"Got initial price ${bot.exchange} ${bot.pair} : $price, starting operation")
-          //          isInitDone = true
           val seed = initialSeed(p)
           sendOrders(seed, As.Seed)
         case _ => error(s"Orderbook#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
       }
-
-    case a : GotOrderId => queueRequest(GetOrderInfo(a.id, a.as))
-
-    case GotOrderInfo(offer) =>
+      
+    case GotOpenOrderInfo(offer) =>
       maintain()
       offer.status match {
 

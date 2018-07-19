@@ -84,7 +84,9 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
       case a: CancelOrder => httpPost(a, FcoinRequest.cancelOrder(a.bot.credentials, a.id))
 
-      case a: GetOrderInfo => httpGet(a, FcoinRequest.getOrderInfo(a.bot.credentials, a.id))
+      case a: GetOpenOrderInfo => httpGet(a, FcoinRequest.getOrderInfo(a.bot.credentials, a.id))
+
+      case a: GetNewOrderInfo => httpGet(a, FcoinRequest.getOrderInfo(a.bot.credentials, a.id))
 
     }
 
@@ -148,11 +150,13 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
             case a: NewOrder =>
               val id = data.as[String]
-              a.book ! GotOrderId(id, a.as)
+              op foreach(_ ! GotNewOrderId(id, a.as, a))
+
+            case a: GetNewOrderInfo => op foreach(_ ! GotNewOrderInfo(FcoinActor.toOffer(data.as[JsValue]), a.newOrder, a.book))
 
             case a: CancelOrder => a.book ! GotOrderCancelled(a.id, a.as)
 
-            case a: GetOrderInfo => a.book ! GotOrderInfo(FcoinActor.toOffer(data.as[JsValue]))
+            case a: GetOpenOrderInfo => a.book ! GotOpenOrderInfo(FcoinActor.toOffer(data.as[JsValue]))
 
           }
         }

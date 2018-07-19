@@ -2,7 +2,6 @@ package me.mbcu.integrated.mmm.ops.common
 
 import me.mbcu.integrated.mmm.ops.Definitions
 import me.mbcu.integrated.mmm.ops.Definitions.Exchange
-import me.mbcu.integrated.mmm.ops.common.{Bot, Config}
 import org.scalatest.FunSuite
 import play.api.libs.json.Json
 

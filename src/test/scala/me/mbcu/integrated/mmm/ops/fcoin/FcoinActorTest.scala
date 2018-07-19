@@ -1,7 +1,6 @@
 package me.mbcu.integrated.mmm.ops.fcoin
 
 import me.mbcu.integrated.mmm.ops.common.Status
-import me.mbcu.integrated.mmm.ops.fcoin.FcoinActor
 import org.scalatest.FunSuite
 import play.api.libs.json.{JsValue, Json}
 

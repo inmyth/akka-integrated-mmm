@@ -29,13 +29,17 @@ object AbsRestActor {
 
   case class NewOrder(offer: Offer, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
-  case class GetOrderInfo(id: String, override val as:Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetOpenOrderInfo(id: String, override val as:Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+
+  case class GetNewOrderInfo(id: String, newOrder: NewOrder, override val as:Option[As]) (implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
 
   case class GotStartPrice(price: Option[BigDecimal])
 
-  case class GotOrderId(id: String, as: Option[As])
+  case class GotNewOrderId(id: String, as: Option[As], b: SendRequest)
 
-  case class GotOrderInfo(offer: Offer)
+  case class GotOpenOrderInfo(offer: Offer)
+
+  case class GotNewOrderInfo(offer: Offer, o: NewOrder, book: ActorRef)
 
   case class GotOrderCancelled(id: String, as: Option[As])
 
@@ -60,7 +64,7 @@ abstract class AbsRestActor() extends Actor {
 
   def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach (_ ! ErrorShutdown(shutdownCode, code, msg))
 
-  def errorIgnore(code: Int, msg: String): Unit = op foreach (_ ! ErrorIgnore(code, msg))
+  def errorIgnore(code: Int, msg: String, shouldEmail: Boolean = false): Unit = op foreach (_ ! ErrorIgnore(code, msg, shouldEmail))
 
   override def receive: Receive = {
 

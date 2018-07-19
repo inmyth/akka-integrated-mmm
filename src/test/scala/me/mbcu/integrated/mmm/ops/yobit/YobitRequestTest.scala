@@ -1,6 +1,5 @@
 package me.mbcu.integrated.mmm.ops.yobit
 
-import me.mbcu.integrated.mmm.ops.yobit.YobitRequest
 import org.scalatest.FunSuite
 
 class YobitRequestTest extends FunSuite{

@@ -24,6 +24,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
   private var rest: Option[ActorRef] = None
   private var dqCancellable: Option[Cancellable] = None
   private val q = new scala.collection.mutable.Queue[SendRequest]
+  private val nos =  scala.collection.mutable.Set[NewOrder]()
 
   override def receive: Receive = {
 
@@ -39,16 +40,29 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case "init dequeue scheduler" => dqCancellable = Some(context.system.scheduler.schedule(1 second, exchangeDef.intervalMillis milliseconds, self, "dequeue"))
 
-    case "dequeue" => if (q.nonEmpty) {
-      val next = q.dequeue()
-      rest foreach(_ ! next)
-    }
+    case "dequeue" =>
+      if (q.nonEmpty) {
+        val next = q.dequeue()
+        next match {
+          case order: NewOrder => nos += order
+          case _ =>
+        }
+        rest foreach(_ ! next)
+      }
 
     case QueueRequest(seq) => q ++= seq
 
-    case a : CheckInQueue => if (isNotInQueue(a.bot, a.ass)) a.book ! a.msg
+    case a: CheckInQueue => if (isNotInQueue(a.bot, a.ass)) a.book ! a.msg
 
-    case a : QueueGetOrderInfo => q ++= removeAlreadyInQueue(a.bot, a.batch)
+    case a: QueueGetOpenOrderInfo => q ++= removeAlreadyInQueue(a.bot, a.batch)
+
+    case a: GotNewOrderId =>
+      val newOrder = a.b.asInstanceOf[NewOrder]
+      q += GetNewOrderInfo(a.id, a.b.asInstanceOf[NewOrder], a.as)(newOrder.bot, newOrder.book)
+
+    case a: GotNewOrderInfo =>
+      nos -= a.o
+      a.book ! GotOpenOrderInfo(a.offer)
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
       base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
@@ -62,12 +76,13 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
   def isNotInQueue(bot: Bot, ass: Seq[As]): Boolean = {
     val qs = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
-    ass.map(qs.contains(_)).forall(_ == false)
+    val ns = nos.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
+    ass.map((qs ++ ns).contains(_)).forall(_ == false)
   }
 
-  def removeAlreadyInQueue(bot: Bot, batch: Seq[GetOrderInfo]): Seq[GetOrderInfo] = {
+  def removeAlreadyInQueue(bot: Bot, batch: Seq[GetOpenOrderInfo]): Seq[GetOpenOrderInfo] = {
     val prep = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).collect {
-      case a: GetOrderInfo => a
+      case a: GetOpenOrderInfo => a
     }.map(_.id)
     batch.filter(a => !prep.contains(a.id))
   }

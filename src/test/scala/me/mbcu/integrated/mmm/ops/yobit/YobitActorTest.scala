@@ -1,9 +1,8 @@
 package me.mbcu.integrated.mmm.ops.yobit
 
 import me.mbcu.integrated.mmm.ops.common.{Side, Status}
-import me.mbcu.integrated.mmm.ops.yobit.YobitActor
 import org.scalatest.FunSuite
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.Json
 
 class YobitActorTest extends FunSuite{
 

@@ -90,7 +90,9 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
       case a: GetOwnPastTrades => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
 
-      case a: GetOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
+      case a: GetOpenOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
+
+      case a: GetNewOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
 
     }
 
@@ -141,12 +143,13 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
                   case t: GetOwnPastTrades => book ! GotStartPrice(YobitActor.parseLastOwnTradePrice(js))
 
-                  case t: NewOrder => book ! GotOrderId(YobitActor.parseForOrderId(js), t.as)
+                  case t: NewOrder => op foreach(_ ! GotNewOrderId(YobitActor.parseForOrderId(js), t.as, t))
 
-                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as)
+                  case t: GetNewOrderInfo => op foreach(_ ! GotNewOrderInfo(YobitActor.parseOrderInfo(js), t.newOrder, book))
 
-                  case t: GetOrderInfo => book ! GotOrderInfo(YobitActor.parseOrderInfo(js))
+                  case t: GetOpenOrderInfo => book ! GotOpenOrderInfo(YobitActor.parseOrderInfo(js))
                   //{"success":0,"error":"A996DD2E"} // if order doesn't exist
+                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as)
 
                   case t: GetOrderbook =>
                     val activeOrders =

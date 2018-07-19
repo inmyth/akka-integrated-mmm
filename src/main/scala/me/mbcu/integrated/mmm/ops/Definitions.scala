@@ -48,9 +48,9 @@ object Definitions {
   }
 
 
-  case class ErrorIgnore(code: Int, msg: String)
+  case class ErrorIgnore(code: Int, msg: String, shouldEmail: Boolean)
   case class ErrorShutdown(shutdown: ShutdownCode, code: Int, msg: String)
-  case class ErrorRetryRest(sendRequest: SendRequest, code: Int, msg: String, shouldEmail: Boolean = true)
+  case class ErrorRetryRest(sendRequest: SendRequest, code: Int, msg: String, shouldEmail: Boolean)
 
 
   object Settings extends Enumeration{

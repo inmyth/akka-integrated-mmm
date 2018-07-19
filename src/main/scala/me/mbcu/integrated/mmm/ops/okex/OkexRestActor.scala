@@ -14,15 +14,9 @@ import play.api.libs.ws.ahc.StandaloneAhcWSClient
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success, Try}
 
-class OkexRestActor() extends AbsRestActor() with MyLogging {
+object OkexRestActor {
+  def parseForId(js: JsValue): String = (js \ "order_id").as[Long].toString
 
-  import play.api.libs.ws.DefaultBodyReadables._
-  import play.api.libs.ws.DefaultBodyWritables._
-
-  private implicit val materializer = ActorMaterializer()
-  private implicit val ec: ExecutionContextExecutor = global
-  val OKEX_ERRORS: Map[Int, String] = OkexRest.OKEX_ERRORS
-  val url: String = OkexRest.endpoint
   val toOffer: JsValue => Offer = (data: JsValue) =>
     new Offer(
       (data \ "order_id").as[Long].toString,
@@ -35,6 +29,17 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
       (data \ "price").as[BigDecimal],
       (data \ "deal_amount").asOpt[BigDecimal]
     )
+}
+
+class OkexRestActor() extends AbsRestActor() with MyLogging {
+  import play.api.libs.ws.DefaultBodyReadables._
+  import play.api.libs.ws.DefaultBodyWritables._
+
+  private implicit val materializer = ActorMaterializer()
+  private implicit val ec: ExecutionContextExecutor = global
+  val OKEX_ERRORS: Map[Int, String] = OkexRest.OKEX_ERRORS
+  val url: String = OkexRest.endpoint
+
   private var ws = StandaloneAhcWSClient()
 
   override def start(): Unit = setOp(Some(sender()))
@@ -66,7 +71,13 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
           .post(stringifyXWWWForm(OkexRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1)))
           .map(response => parse(a, response.body[String]))
 
-      case a: GetOrderInfo =>
+      case a: GetOpenOrderInfo =>
+        ws.url(s"$url/order_info.do")
+          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
+          .post(stringifyXWWWForm(OkexRequest.restInfoOrder(a.bot.credentials, a.bot.pair, a.id)))
+          .map(response => parse(a, response.body[String]))
+
+      case a: GetNewOrderInfo =>
         ws.url(s"$url/order_info.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
           .post(stringifyXWWWForm(OkexRequest.restInfoOrder(a.bot.credentials, a.bot.pair, a.id)))
@@ -109,18 +120,22 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
 
             case t: GetOrderbook =>
               val orders = (js \ "orders").as[List[JsValue]]
-              val res = orders.map(toOffer)
+              val res = orders.map(OkexRestActor.toOffer)
               val currentPage = (js \ "currency_page").as[Int]
               val nextPage = if ((js \ "page_length").as[Int] > 200) true else false
               book ! GotOrderbook(res, currentPage, nextPage)
 
-            case t: NewOrder => book ! GotOrderId((js \ "order_id").as[Long].toString, t.as)
+            case t: NewOrder => op foreach(_ ! GotNewOrderId(OkexRestActor.parseForId(js), t.as, t))
+
+            case t: GetNewOrderInfo =>
+              val order = (js \ "orders").as[JsArray].head
+              if (order.isDefined) op foreach(_ ! GotNewOrderInfo(OkexRestActor.toOffer(order.as[JsValue]), t.newOrder, book)) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
 
             case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String], t.as)
 
-            case t: GetOrderInfo =>
+            case t: GetOpenOrderInfo =>
               val order = (js \ "orders").as[JsArray].head
-              if (order.isDefined) book ! GotOrderInfo(toOffer(order.as[JsValue])) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
+              if (order.isDefined) book ! GotOpenOrderInfo(OkexRestActor.toOffer(order.as[JsValue])) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
 
             case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
           }

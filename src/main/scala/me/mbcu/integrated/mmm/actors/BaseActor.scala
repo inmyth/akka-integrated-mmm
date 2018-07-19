@@ -68,7 +68,7 @@ class BaseActor(configPath: String) extends Actor with MyLogging {
 
     case ErrorShutdown(shutdown, code, msg) => ses foreach(_ ! CacheMessages(msg, Some(shutdown.id)))
 
-    case ErrorIgnore(code, msg) => ses foreach(_ ! CacheMessages(msg, None))
+    case ErrorIgnore(code, msg, shouldEmail) => if(shouldEmail) ses foreach(_ ! CacheMessages(msg, None))
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) => if(shouldEmail) ses foreach(_ ! CacheMessages(msg, None))
 
