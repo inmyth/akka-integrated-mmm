@@ -37,7 +37,7 @@ object AbsRestActor {
 
   case class GotOrderInfo(offer: Offer)
 
-  case class GotOrderCancelled(id: String)
+  case class GotOrderCancelled(id: String, as: Option[As])
 
   case class GotOrderbook(offers: Seq[Offer], currentPage: Int, nextPage: Boolean)
 

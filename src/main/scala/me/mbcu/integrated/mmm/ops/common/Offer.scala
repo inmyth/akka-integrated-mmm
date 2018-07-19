@@ -65,24 +65,24 @@ object Offer {
 
   def newOffer(symbol : String, side: Side, price : BigDecimal, quantity: BigDecimal) : Offer = Offer("unused", symbol, side, None, None, None, quantity, price, None)
 
-
   def dump(bot: Bot, sortedBuys: Seq[Offer], sortedSels: Seq[Offer]) : String = {
     val builder = StringBuilder.newBuilder
     builder.append(System.getProperty("line.separator"))
     builder.append(s"Open Orders ${bot.exchange}: ${bot.pair}")
     builder.append(System.getProperty("line.separator"))
+    builder.append(s"sells : ${sortedSels.size}")
+    builder.append(System.getProperty("line.separator"))
+    sortedSels.sortWith(_.price > _.price).foreach(s => {
+      builder.append(s"id:${s.id} quantity:${s.quantity.bigDecimal.toPlainString} price:${s.price.bigDecimal.toPlainString} filled:${s.cumQuantity.get.bigDecimal.toPlainString}")
+      builder.append(System.getProperty("line.separator"))
+    })
     builder.append(s"buys : ${sortedBuys.size}")
     builder.append(System.getProperty("line.separator"))
     sortedBuys.foreach(b => {
       builder.append(s"id:${b.id} quantity:${b.quantity.bigDecimal.toPlainString} price:${b.price.bigDecimal.toPlainString} filled:${b.cumQuantity.get.bigDecimal.toPlainString}")
       builder.append(System.getProperty("line.separator"))
     })
-    builder.append(s"sells : ${sortedSels.size}")
-    builder.append(System.getProperty("line.separator"))
-    sortedSels.foreach(s => {
-      builder.append(s"id:${s.id} quantity:${s.quantity.bigDecimal.toPlainString} price:${s.price.bigDecimal.toPlainString} filled:${s.cumQuantity.get.bigDecimal.toPlainString}")
-      builder.append(System.getProperty("line.separator"))
-    })
+
     builder.toString()
   }
 

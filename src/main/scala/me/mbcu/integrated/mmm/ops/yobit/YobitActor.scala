@@ -46,7 +46,7 @@ object YobitActor {
         case 0 => Some(Status.unfilled)
         case 1 => Some(Status.filled)
         case 2 => Some(Status.cancelled)
-        case _ => Some(Status.cancelled)
+        case _ => Some(Status.filled)
       },
       Some((head._2 \ "timestamp_created").as[String].toLong),
       None,
@@ -143,7 +143,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
                   case t: NewOrder => book ! GotOrderId(YobitActor.parseForOrderId(js), t.as)
 
-                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js))
+                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as)
 
                   case t: GetOrderInfo => book ! GotOrderInfo(YobitActor.parseOrderInfo(js))
                   //{"success":0,"error":"A996DD2E"} // if order doesn't exist

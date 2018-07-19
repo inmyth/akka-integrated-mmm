@@ -1,4 +1,4 @@
-package me.mbcu.integrated.ops.common
+package me.mbcu.integrated.mmm.ops.common
 
 import me.mbcu.integrated.mmm.ops.Definitions
 import me.mbcu.integrated.mmm.ops.Definitions.Exchange

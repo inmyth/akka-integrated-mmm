@@ -1,3 +1,9 @@
+0.3.6
+- doubles were caused by multiple GetOrderInfo (with same id) being queued too many times (order check just keeps pushing new requests every interval). If multiple GetOrderInfo check a same filled order then the bot will create more than one counter.
+    - fixed it by removing inbound GetOrderInfo requests which have the same order Id as the ones in queue.
+- Grow is put in the same place as counter. Removed grow from balancer scheduler
+    - GotOrderCancel is not a place to put grow. This is used to clear orderbook the first time.
+
 0.3.5
 - doubles were caused by GotOrderInfo's starting refresh before orderbook init was complete (startPrice not yet available)
     - fixed by not launching refresh if the cancellable is None.

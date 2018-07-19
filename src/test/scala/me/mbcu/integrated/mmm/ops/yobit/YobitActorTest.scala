@@ -1,4 +1,4 @@
-package me.mbcu.integrated.ops.yobit
+package me.mbcu.integrated.mmm.ops.yobit
 
 import me.mbcu.integrated.mmm.ops.common.{Side, Status}
 import me.mbcu.integrated.mmm.ops.yobit.YobitActor

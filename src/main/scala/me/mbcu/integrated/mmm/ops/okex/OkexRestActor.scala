@@ -116,7 +116,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
 
             case t: NewOrder => book ! GotOrderId((js \ "order_id").as[Long].toString, t.as)
 
-            case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String])
+            case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String], t.as)
 
             case t: GetOrderInfo =>
               val order = (js \ "orders").as[JsArray].head

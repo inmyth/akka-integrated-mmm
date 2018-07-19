@@ -1,6 +1,6 @@
 name := "akka-integrated-mmm"
 
-version := "0.3.5"
+version := "0.3.6"
 
 scalaVersion := "2.12.6"
 
@@ -27,7 +27,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-testkit"    % akkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-testkit"         % akkaVersion     % Test,
   "com.typesafe.akka" %% "akka-stream-testkit"  % akkaVersion     % Test,
-  "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
+  "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test,
+  "org.mockito"       % "mockito-core"          % "2.19.1"         % Test
 )
 
 excludeDependencies += "commons-logging" % "commons-logging"

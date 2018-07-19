@@ -1,4 +1,4 @@
-package me.mbcu.integrated.ops.fcoin
+package me.mbcu.integrated.mmm.ops.fcoin
 
 import me.mbcu.integrated.mmm.ops.common.Status
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinActor

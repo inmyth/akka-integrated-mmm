@@ -41,13 +41,14 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case "dequeue" => if (q.nonEmpty) {
       val next = q.dequeue()
-//      info(s"Popping ${exchangeDef.name} / ${next.bot.pair} : ${next.as.getOrElse("")}")
       rest foreach(_ ! next)
     }
 
     case QueueRequest(seq) => q ++= seq
 
     case a : CheckInQueue => if (isNotInQueue(a.bot, a.ass)) a.book ! a.msg
+
+    case a : QueueGetOrderInfo => q ++= removeAlreadyInQueue(a.bot, a.batch)
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
       base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
@@ -62,7 +63,13 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
   def isNotInQueue(bot: Bot, ass: Seq[As]): Boolean = {
     val qs = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
     ass.map(qs.contains(_)).forall(_ == false)
-//    if (q.isEmpty) true else ass.map(isInQueue).forall(_ == false)
+  }
+
+  def removeAlreadyInQueue(bot: Bot, batch: Seq[GetOrderInfo]): Seq[GetOrderInfo] = {
+    val prep = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).collect {
+      case a: GetOrderInfo => a
+    }.map(_.id)
+    batch.filter(a => !prep.contains(a.id))
   }
 
 }

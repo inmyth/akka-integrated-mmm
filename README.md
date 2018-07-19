@@ -4,22 +4,9 @@ An automated grid/ping-pong market-making bot supporting various exchanges.
 
 [Exchanges and the handling](./EXCHANGES.md)
 
+[Operation](./OPERATION.md)
+
 [Version notes](./VERSIONS.md)
-
-## Operation
-
-This app is built with Akka framework that uses Actors. The core ones are:
-- BaseActor: reads config
-- OpActor : contains FIFO sequence that caches requests and sends them one-by-one with rate allowed by the exchange
-- OrderbookActor: contains orderbook and order management for a specific pair
-- ExchangeActor: handles API's request, response for an exchange
-
-The bot maintains all orders in runtime memory.
-It will handle server issues with retry mechanism (e.g order that fails to deliver due to temporary server error will be resent later) while trading error will be ignored (e.g lack of fund)
-
-Bot should be started or restarted when
-1. config is created or changed
-2. an irrecoverable error occurs (wrong api/secret, user ban, permanent endpoint change)
 
 ## To Use
 Use [config-template](./config-template) as config reference.
