@@ -81,9 +81,9 @@ class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyL
     case "maintain" =>
       (sels.size, buys.size) match {
         case (0,0) =>
-          op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "init price"))
+          op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter), "init price"))
         case _ =>
-          op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "reseed"))
+          op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter), "reseed"))
           op.foreach(_ ! QueueGetOpenOrderInfo((sortedBuys ++ sortedSels).map(_.id).map(GetOpenOrderInfo(_, Some(As.RoutineCheck)))))
           if (bot.isStrictLevels) op.foreach(_ ! CheckInQueue(Seq(As.Trim), "trim"))
       }

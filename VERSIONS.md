@@ -1,3 +1,6 @@
+0.4.3
+- fixed small bug in dump
+
 0.4.2
 - counter needs to cancel all seeds
 
