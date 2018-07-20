@@ -1,3 +1,6 @@
+0.4.1
+- fixed bug in reseed
+
 0.4.0
 - Introduced a new variable in Exchange `seedIfEmpty` to seed only if the side has no open orders.
       - because during GetOrderInfo sequence multiple orders may get filled, seed while half-empty cannot work well

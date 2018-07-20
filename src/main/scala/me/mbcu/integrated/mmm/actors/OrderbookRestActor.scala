@@ -94,7 +94,7 @@ class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyL
       } else {
         growth ++= grow(Side.buy) ++ grow(Side.sell)
       }
-      (growth, As.Seed)
+      sendOrders(growth, As.Seed)
 
     case "trim" =>
       val trims = trim(Side.buy) ++ trim(Side.sell)
