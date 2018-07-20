@@ -13,6 +13,8 @@ object OkexRest extends AbsExchange {
 
   override def getActorRefProps: Props = Props(new OkexRestActor())
 
+  override val seedIfEmpty: Boolean = true
+
   val OKEX_ERRORS = Map(
     1002 -> "The transaction amount exceed the balance",
     1003 -> "The transaction amount is less than the minimum",

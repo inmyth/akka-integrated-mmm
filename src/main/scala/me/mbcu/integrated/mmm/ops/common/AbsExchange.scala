@@ -15,4 +15,6 @@ abstract class AbsExchange {
 
   def getActorRefProps: Props
 
+  def seedIfEmpty: Boolean
+
 }

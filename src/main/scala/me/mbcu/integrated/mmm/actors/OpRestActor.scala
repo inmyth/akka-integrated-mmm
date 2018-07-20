@@ -9,7 +9,6 @@ import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging
 
-import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -33,7 +32,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
       rest = Some(context.actorOf(exchangeDef.getActorRefProps))
       rest foreach (_ ! StartRestActor)
       bots.foreach(bot => {
-        val book = context.actorOf(Props(new OrderbookRestActor(bot)), name= s"${bot.pair}")
+        val book = context.actorOf(Props(new OrderbookRestActor(bot, exchangeDef)), name= s"${bot.pair}")
         book ! "start"
       })
       self ! "init dequeue scheduler"

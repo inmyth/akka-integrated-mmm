@@ -13,7 +13,6 @@ Bot should be started or restarted when
 1. config is created or changed
 2. an irrecoverable error occurs (wrong api/secret, user ban, permanent endpoint change)
 
-
 ## Orderbook
 
 Operation here is divided by two: initialization and normal.
@@ -22,13 +21,11 @@ During initialization bot will retrieve active orders from the exchange. Dependi
 
 All callbacks in Orderbooks except GetOpenOrderInfo are used during initialization.
 
-
 ### Maintain
 
 Maintain grows (replacing missing levels) or trim (cancelling overgrown levels) a side. This is triggered after some time interval of idleness in GetOrderInfo.
 
 Grow cannot be started at the same time as Counter because it might read from empty buys / sels during seeding, produces incorrect seeds if there are multiple counters.
-
 
 ### Queue
 
@@ -42,6 +39,14 @@ So GetInfo with an orderId will only be pushed if there's no similar request in 
 Also all REST exchanges have the same characteristic: new order request will only return its id, not its status. So another call is needed to get the info.
 
 So all new orders are also put in a set while waiting the get info request to complete. Any new seeds from Orderbook will also take into count pending orders in this set since those orders have not been registered in the orderbook.
+
+### Doubles
+
+This is the most complicated issue. Doubles are caused by seeding which fires off at the wrong moment (seeding with reference orders which are filled but with not yet refreshed in the orderbook).
+
+For REST this is almost unavoidable because there is no even broadcast. The status of the orders can only be known by completing all the GetInfo requests in queue.
+
+To avoid it, exchange is hard-coded with a param `seedIfEmpty` which only makes the bot seed only when the orderbook is empty.
 
 
 ## Future work

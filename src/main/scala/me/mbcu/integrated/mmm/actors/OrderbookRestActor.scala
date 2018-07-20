@@ -27,7 +27,7 @@ object OrderbookRestActor {
 
 }
 
-class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
+class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyLogging {
   private implicit val ec: ExecutionContextExecutor = global
   var sels: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
   var buys: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
@@ -82,13 +82,19 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
           op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "init price"))
         case _ =>
           op.foreach(_ ! CheckInQueue(Seq(As.Seed, As.Counter, As.ClearOpenOrders), "reseed"))
-          op.foreach(_ ! QueueGetOpenOrderInfo((buys ++ sels).toSeq.map(_._1).map(GetOpenOrderInfo(_, Some(As.RoutineCheck)))))
+          op.foreach(_ ! QueueGetOpenOrderInfo((sortedBuys ++ sortedSels).map(_.id).map(GetOpenOrderInfo(_, Some(As.RoutineCheck)))))
           if (bot.isStrictLevels) op.foreach(_ ! CheckInQueue(Seq(As.Trim), "trim"))
       }
 
     case "reseed" =>
-      val growth = grow(Side.buy) ++ grow(Side.sell)
-      sendOrders(growth, As.Seed)
+      var growth = Seq.empty[Offer]
+      if (exchange.seedIfEmpty) {
+        if (sortedBuys.isEmpty) growth ++= grow(Side.buy)
+        if (sortedSels.isEmpty) growth ++= grow(Side.sell)
+      } else {
+        growth ++= grow(Side.buy) ++ grow(Side.sell)
+      }
+      (growth, As.Seed)
 
     case "trim" =>
       val trims = trim(Side.buy) ++ trim(Side.sell)
@@ -117,26 +123,17 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
       maintain()
       offer.status match {
 
-        case Some(Status.unfilled) =>
-          add(offer)
-          sort(offer.side)
+        case Some(Status.unfilled) => addSort(offer)
 
         case Some(Status.filled) =>
-          remove(offer.side, offer.id)
-          sort(offer.side)
+          removeSort(offer)
           val counters = counter(offer)
           sendOrders(counters, as = As.Counter)
-//          if this happens during seeding then grow wont work because it reads from empty buys and sels
-//          val growth = grow(offer.side)
-//          sendOrders(growth, As.Seed)
 
-        case Some(Status.partialFilled) =>
-          add(offer)
-          sort(offer.side)
+        case Some(Status.partialFilled) => addSort(offer)
 
         case Some(Status.cancelled | Status.cancelInProcess) =>
-          remove(offer.side, offer.id)
-          sort(offer.side)
+          removeSort(offer)
           val growth = grow(offer.side)
           sendOrders(growth, As.Seed)
 
@@ -145,7 +142,6 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
       }
 
   }
-
 
   def queueRequest(a: SendRequest) : Unit = queueRequests(Seq(a))
 
@@ -228,7 +224,6 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
 
   def trim(side : Side) : Seq[Offer] = {
     val (orders, limit) = if (side == Side.buy) (sortedBuys, bot.buyGridLevels) else (sortedSels, bot.sellGridLevels)
-    // this may cause a hole.
     orders.slice(limit, orders.size)
   }
 
@@ -260,6 +255,16 @@ class OrderbookRestActor(bot: Bot) extends Actor with MyLogging {
       case _ => (BigDecimal("0"), BigDecimal("0"))
     }
     (levels, q0p0._1, q0p0._2, isPulledFromOtherSide)
+  }
+
+  def addSort(offer: Offer):Unit = {
+    add(offer)
+    sort(offer.side)
+  }
+
+  def removeSort(offer: Offer): Unit = {
+    remove(offer.side, offer.id)
+    sort(offer.side)
   }
 
   def add(offer: Offer): Unit = {

@@ -17,4 +17,6 @@ object Fcoin extends AbsExchange {
   override def intervalMillis: Int = 800
 
   override def getActorRefProps: Props = Props(new FcoinActor())
+
+  override val seedIfEmpty: Boolean = true
 }

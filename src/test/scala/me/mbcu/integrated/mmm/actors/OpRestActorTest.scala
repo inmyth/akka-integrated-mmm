@@ -23,17 +23,5 @@ class OpRestActorTest extends FunSuite with MockitoSugar {
     assert(!res.map(_.id).contains("aaa"))
   }
 
-  test ("Set's uniqueness") {
-    var set = scala.collection.mutable.Set[SendRequest]()
-    val a = NewOrder(mock[Offer], Some(As.Counter))
-    val b = NewOrder(mock[Offer], Some(As.Counter))
-    val c = NewOrder(Offer.newOffer("abc", Side.buy, BigDecimal("100"), BigDecimal("100")), Some(As.Counter))
-    set += a
-    set += b
-    set += c
-    set -= a
-    assert(!set.contains(a))
-
-  }
 
 }

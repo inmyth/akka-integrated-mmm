@@ -46,7 +46,7 @@ object YobitActor {
         case 0 => Some(Status.unfilled)
         case 1 => Some(Status.filled)
         case 2 => Some(Status.cancelled)
-        case _ => Some(Status.filled)
+        case _ => Some(Status.cancelled)
       },
       Some((head._2 \ "timestamp_created").as[String].toLong),
       None,

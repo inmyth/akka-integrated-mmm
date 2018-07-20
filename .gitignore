@@ -90,6 +90,7 @@ project/plugins/project/
 .cache-main
 
 credentials
+stuff
 config
 config-extra
 log/

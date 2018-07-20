@@ -1,6 +1,11 @@
+0.4.0
+- Introduced a new variable in Exchange `seedIfEmpty` to seed only if the side has no open orders.
+      - because during GetOrderInfo sequence multiple orders may get filled, seed while half-empty cannot work well
+- Yobit status 3 and _ is now cancelled
+
 0.3.7
 - solution 0.3.6 was not perfect. After receiving a new order id, this id must be queried again with GetInfo. During this duration, there was a hole where `CheckInQueue` cannot find any pending orders. This caused multiple to be pushed.
-    - OpRest now holds a set to hold pending NewOrders or successful new orders that are still waiting for their info. `CheckInQueue` will also check any pending orders here. 
+    - OpRest now holds a set to hold pending NewOrders or successful new orders that are still waiting for their info. `CheckInQueue` will also check any pending orders here.
 
 0.3.6
 - doubles were caused by multiple GetOrderInfo (with same id) being queued too many times (order check just keeps pushing new requests every interval). If multiple GetOrderInfo check a same filled order then the bot will create more than one counter.
@@ -14,7 +19,7 @@
 - changed isInQueue
 
 0.3.4
-- fixed wrong isInQueue
+- fixed isInQueue
 - enumerized As
 - all request should have As. Refresh orders will first check As in queue along with GetOrderInfo which sets off after NewOrder
 
@@ -67,7 +72,7 @@ NOTE: even more secure way is not to pop the request from the queue but remove i
 - Supports okexRest
 
 TODO
-- [] Long test on Yobit
+- [x] Long test on Yobit
 - Config `startOrderbookEmpty` renamed to `seed`. lastTicker, lastOwn, price ->
     - [x] Rest methods should not return shutdown except for config error, creds error (except Okex)
     - [] WS needs to reconnect WS

@@ -21,4 +21,6 @@ object Yobit extends AbsExchange {
   override def getActorRefProps: Props = Props(new YobitActor())
 
   val nonceFactor : Long = 1530165626000l // some random ts June 28
+
+  override val seedIfEmpty: Boolean = true
 }
