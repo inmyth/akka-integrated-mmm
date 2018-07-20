@@ -1,3 +1,6 @@
+0.4.2
+- counter needs to cancel all seeds
+
 0.4.1
 - fixed bug in reseed
 

@@ -9,12 +9,18 @@ import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object OpRestActor {
 
+  def isNotInQueue(q: mutable.Queue[SendRequest], nos: mutable.Set[NewOrder], bot: Bot, ass: Seq[As]): Boolean = {
+    val qs = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
+    val ns = nos.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
+    ass.map((qs ++ ns).contains(_)).forall(_ == false)
+  }
 }
 
 class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with MyLogging {
@@ -51,7 +57,18 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
     case QueueRequest(seq) => q ++= seq
 
-    case a: CheckInQueue => if (isNotInQueue(a.bot, a.ass)) a.book ! a.msg
+    case a: CheckInQueue => if (OpRestActor.isNotInQueue(q, nos, a.bot, a.ass)) a.book ! a.msg
+
+    case a: CancelInQueue =>
+      val indicesToDelete = q.toList.zipWithIndex
+      .filter(_._1.bot.exchange == a.bot.exchange)
+      .filter(_._1.bot.pair == a.bot.pair)
+      .filter(_._1.as.contains(a.as)).map(_._2)
+      val bitSet = mutable.BitSet(indicesToDelete: _*)
+      val buffer = q.toBuffer
+      for (i <- (buffer.size -1) to 0 by -1) if (bitSet contains i) buffer remove i
+      q.clear()
+      buffer.foreach(q += _)
 
     case a: QueueGetOpenOrderInfo => q ++= removeAlreadyInQueue(a.bot, a.batch)
 
@@ -73,11 +90,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with M
 
   }
 
-  def isNotInQueue(bot: Bot, ass: Seq[As]): Boolean = {
-    val qs = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
-    val ns = nos.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).flatMap(_.as).toList
-    ass.map((qs ++ ns).contains(_)).forall(_ == false)
-  }
+
 
   def removeAlreadyInQueue(bot: Bot, batch: Seq[GetOpenOrderInfo]): Seq[GetOpenOrderInfo] = {
     val prep = q.filter(_.bot.exchange == bot.exchange).filter(_.bot.pair == bot.pair).collect {

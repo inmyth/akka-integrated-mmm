@@ -23,6 +23,8 @@ object OrderbookRestActor {
 
   case class CheckInQueue(ass: Seq[As], msg: String)(implicit val book: ActorRef, implicit val bot: Bot)
 
+  case class CancelInQueue(as: As)(implicit val book: ActorRef, implicit val bot: Bot)
+
   case class QueueGetOpenOrderInfo(batch: Seq[GetOpenOrderInfo])(implicit val book: ActorRef, implicit val bot: Bot)
 
 }
@@ -128,6 +130,7 @@ class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyL
         case Some(Status.filled) =>
           removeSort(offer)
           val counters = counter(offer)
+          op foreach (_! CancelInQueue(As.Seed))
           sendOrders(counters, as = As.Counter)
 
         case Some(Status.partialFilled) => addSort(offer)
