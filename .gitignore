@@ -96,4 +96,5 @@ config
 config-extra
 log/
 millis/
+cache/
 .jar
