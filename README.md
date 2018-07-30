@@ -2,7 +2,7 @@
 
 An automated grid/ping-pong market-making bot supporting various exchanges.
 
-[Exchanges and the handling](./EXCHANGES.md)
+[Supported exchanges and their handling](./EXCHANGES.md)
 
 [Operation](./OPERATION.md)
 
