@@ -15,8 +15,8 @@ One bot handles one symbol(pair).
 When starting empty: use `lastTicker`, `lastOwn`, or a value as seed starting price.
 
 When re-starting:
-- Use `cont` to continue from last session, all uncountered offers will be countered. This method should be used when the config remains the same.
-- Use other seed methods to clear all active orders and start anew. All uncountered offers won't be countered. Use this method when config is changed.
+- If config remains the same, use `cont` to continue from last session, all uncountered offers will be countered.
+- If config has changed, use other seed methods to clear all active orders and start anew. All uncountered offers won't be countered.
 
 ## Running
 Use [config-template](./config-template) as config reference.
