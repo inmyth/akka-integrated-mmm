@@ -1,3 +1,13 @@
+0.5.0
+- revamped
+- input last order sent/ts
+- active orders cannot queue when new orders are in q
+- active orders need to be partitioned and sorted
+- active orders : seed and trim, filled orders : counter. no dependency relation between them
+- counter mechanism: store last countered id on bot cache, read it before getFilled is called, and use it as lower bound of all uncountered orders
+    - different exchange has different indicator
+
+
 0.4.3
 - fixed small bug in dump
 

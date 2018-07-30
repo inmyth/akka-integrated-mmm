@@ -5,45 +5,45 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
+import me.mbcu.integrated.mmm.ops.common.StartMethods.StartMethods
 
 object AbsRestActor {
 
   object As extends Enumeration {
     type As = Value
-    val Seed, Trim, Counter, ClearOpenOrders, RoutineCheck = Value
+    val Seed, Trim, Counter, ClearOpenOrders, RoutineCheck, Init = Value
   }
 
-  trait SendRequest{
-    def as:Option[As]
+  trait SendRest{
+    def as:As
     def bot: Bot
     def book: ActorRef
   }
 
-  case class GetOrderbook(page: Int, override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  trait GotRest{
+    def arriveMs : Long
+    def send : SendRest
+  }
 
-  case class GetTicker(override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetActiveOrders(lastMs: Long, cache: Seq[Offer], page: Int, override val as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class GetOwnPastTrades(override val as:Option[As] = None)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetFilledOrders(lastCounterId: String, override val as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class CancelOrder(id: String, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class CancelOrder(id: String, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class NewOrder(offer: Offer, as: Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class NewOrder(offer: Offer, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class GetOpenOrderInfo(id: String, override val as:Option[As])(implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GetTickerStartPrice(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class GetNewOrderInfo(id: String, newOrder: NewOrder, override val as:Option[As]) (implicit val bot:Bot, implicit val book:ActorRef) extends SendRequest
+  case class GotNewOrderId(id: String, override val arriveMs: Long, override val send: NewOrder) extends GotRest
 
-  case class GotStartPrice(price: Option[BigDecimal])
+  case class GotTickerStartPrice(price: Option[BigDecimal], override val arriveMs: Long, override val send: GetTickerStartPrice) extends GotRest
 
-  case class GotNewOrderId(id: String, as: Option[As], b: SendRequest)
+  case class GotOrderCancelled(id: String, as: As, override val arriveMs: Long, override val send: CancelOrder) extends GotRest
 
-  case class GotOpenOrderInfo(offer: Offer)
+  case class GotActiveOrders(offers: Seq[Offer], currentPage: Int, nextPage: Boolean, override val arriveMs: Long, override val send: GetActiveOrders) extends GotRest
 
-  case class GotNewOrderInfo(offer: Offer, o: NewOrder, book: ActorRef)
-
-  case class GotOrderCancelled(id: String, as: Option[As])
-
-  case class GotOrderbook(offers: Seq[Offer], currentPage: Int, nextPage: Boolean)
+  case class GotUncounteredOrders(offers: Seq[Offer], latestCounterId: Option[String], isSortedFromOldest: Boolean = true, override val arriveMs: Long, override val send: GetFilledOrders) extends GotRest
 
   object StartRestActor
 
@@ -52,7 +52,7 @@ object AbsRestActor {
 abstract class AbsRestActor() extends Actor {
   var op : Option[ActorRef] = None
 
-  def sendRequest(r: SendRequest)
+  def sendRequest(r: SendRest)
 
   def setOp(op: Option[ActorRef]) : Unit = this.op = op
 
@@ -60,7 +60,7 @@ abstract class AbsRestActor() extends Actor {
 
   def url: String
 
-  def errorRetry(sendRequest: SendRequest, code: Int, msg: String, shouldEmail: Boolean = true): Unit = op foreach (_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
+  def errorRetry(sendRequest: SendRest, code: Int, msg: String, shouldEmail: Boolean = true): Unit = op foreach (_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
 
   def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach (_ ! ErrorShutdown(shutdownCode, code, msg))
 
@@ -70,7 +70,7 @@ abstract class AbsRestActor() extends Actor {
 
     case StartRestActor => start()
 
-    case a: SendRequest => sendRequest(a)
+    case a: SendRest => sendRequest(a)
 
   }
 

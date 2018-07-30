@@ -91,7 +91,9 @@ project/plugins/project/
 
 credentials
 stuff
+last
 config
 config-extra
 log/
+millis/
 .jar

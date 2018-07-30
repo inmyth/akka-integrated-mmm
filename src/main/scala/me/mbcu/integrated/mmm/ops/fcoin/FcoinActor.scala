@@ -9,7 +9,7 @@ import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinRequest.FcoinParams
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinState.FcoinState
 import me.mbcu.integrated.mmm.utils.MyLogging
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsLookupResult, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
@@ -21,16 +21,16 @@ object FcoinActor {
     val state = (p \ "state").as[FcoinState]
     val status = state match {
       case FcoinState.filled => Status.filled
-      case FcoinState.submitted => Status.unfilled
-      case FcoinState.partial_filled => Status.partialFilled
+      case FcoinState.submitted => Status.active
+      case FcoinState.partial_filled => Status.partiallyFilled
       case _ => Status.cancelled
     }
     new Offer(
       (p \ "id").as[String],
       (p \ "symbol").as[String],
       (p \ "side").as[Side],
-      Some(status),
-      Some((p \ "created_at").as[Long]),
+      status,
+      (p \ "created_at").as[Long],
       None,
       (p \ "amount").as[BigDecimal],
       (p \ "price").as[BigDecimal],
@@ -53,9 +53,23 @@ object FcoinActor {
 }
 ]
  */
-
   }
 
+  def parseFilled(data: JsLookupResult, lastCounterId: String): (Seq[Offer], Option[String]) = {
+    val dexed = data.as[Seq[JsValue]].map(toOffer).filter(_.status == Status.filled).zipWithIndex
+
+    if (dexed.isEmpty){
+      (Seq.empty[Offer], None)
+    } else {
+      val latestCounterId = dexed.head._1.id
+      val idPos = dexed.find(a => a._1.id == lastCounterId) match {
+        case Some(pos) => pos._2
+        case _ => Int.MaxValue
+      }
+      val uncountereds = dexed.filter(_._2 < idPos).sortWith(_._2 < _._2).map(_._1)
+      (uncountereds, Some(latestCounterId))
+    }
+  }
 }
 
 class FcoinActor() extends AbsRestActor() with MyLogging {
@@ -68,29 +82,25 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
   override def start(): Unit = setOp(Some(sender()))
 
-  override def sendRequest(r: AbsRestActor.SendRequest): Unit = {
+  override def sendRequest(r: AbsRestActor.SendRest): Unit = {
 
     r match {
-      case a: GetTicker =>
+      case a: GetTickerStartPrice =>
         ws.url(Fcoin.endpoint.format(s"market/ticker/${a.bot.pair}"))
-          .get()
-          .map(response => parse(a, "get ticker", response.body[String]))
+            .get()
+            .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: GetOrderbook => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
+      case a: GetActiveOrders => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
 
-      case a: GetOwnPastTrades => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
+      case a: GetFilledOrders => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
 
       case a: NewOrder => httpPost(a, FcoinRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
       case a: CancelOrder => httpPost(a, FcoinRequest.cancelOrder(a.bot.credentials, a.id))
 
-      case a: GetOpenOrderInfo => httpGet(a, FcoinRequest.getOrderInfo(a.bot.credentials, a.id))
-
-      case a: GetNewOrderInfo => httpGet(a, FcoinRequest.getOrderInfo(a.bot.credentials, a.id))
-
     }
 
-    def httpGet(a: SendRequest, f: FcoinParams): Unit = {
+    def httpGet(a: SendRest, f: FcoinParams): Unit = {
       ws.url(f.url)
         .addHttpHeaders("FC-ACCESS-KEY" -> a.bot.credentials.pKey)
         .addHttpHeaders("FC-ACCESS-SIGNATURE" -> f.sign)
@@ -99,7 +109,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
         .map(response => parse(a, f.url, response.body[String]))
     }
 
-    def httpPost(a: SendRequest, r: FcoinParams): Unit = {
+    def httpPost(a: SendRest, r: FcoinParams): Unit = {
       ws.url(r.url)
         .addHttpHeaders("Content-Type" -> "application/json;charset=UTF-8")
         .addHttpHeaders("FC-ACCESS-KEY" -> a.bot.credentials.pKey)
@@ -110,10 +120,11 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
     }
   }
 
-  def parse(a: AbsRestActor.SendRequest, request: String, raw: String): Unit = {
+  def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
+    val arriveMs = System.currentTimeMillis()
     info(
       s"""
-         |Request: $request, As: ${a.as.getOrElse("")}, ${a.bot.exchange} : ${a.bot.pair}
+         |Request: $request, ${a.bot.exchange} : ${a.bot.pair}
          |Response:
          |$raw
        """.stripMargin)
@@ -132,31 +143,23 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
         else {
           val data = js \ "data"
           a match {
-            case a: GetTicker =>
+            case a: GetTickerStartPrice =>
               val lastPrice = (data \ "ticker").head.as[BigDecimal]
-              a.book ! GotStartPrice(Some(lastPrice))
+              a.book ! GotTickerStartPrice(Some(lastPrice), arriveMs, a)
 
-            case a: GetOwnPastTrades =>
-              val lastPrice = data.as[JsObject].fields.headOption match {
-                case Some(v) => (v._2 \ "executed_value").asOpt[BigDecimal]
-                case _ => None
-              }
-              a.book ! GotStartPrice(lastPrice)
+            case a: GetFilledOrders =>
+              val res = FcoinActor.parseFilled(data, a.lastCounterId)
+              a.book ! GotUncounteredOrders(res._1, res._2, isSortedFromOldest = true, arriveMs, a)
 
-            case a: GetOrderbook =>
-              val items = data.as[List[JsValue]]
-              val offers = items.map(FcoinActor.toOffer)
-              a.book ! GotOrderbook(offers, a.page, if (offers.size == 100) true else false)
+            case a: GetActiveOrders =>
+              val res = data.as[Seq[JsValue]].map(FcoinActor.toOffer)
+              a.book ! GotActiveOrders(res, a.page, if (res.size == 100) true else false, arriveMs, a)
 
             case a: NewOrder =>
               val id = data.as[String]
-              op foreach(_ ! GotNewOrderId(id, a.as, a))
+              op foreach(_ ! GotNewOrderId(id, arriveMs, a))
 
-            case a: GetNewOrderInfo => op foreach(_ ! GotNewOrderInfo(FcoinActor.toOffer(data.as[JsValue]), a.newOrder, a.book))
-
-            case a: CancelOrder => a.book ! GotOrderCancelled(a.id, a.as)
-
-            case a: GetOpenOrderInfo => a.book ! GotOpenOrderInfo(FcoinActor.toOffer(data.as[JsValue]))
+            case a: CancelOrder => a.book ! GotOrderCancelled(a.id, a.as, arriveMs, a)
 
           }
         }

@@ -8,7 +8,17 @@ An automated grid/ping-pong market-making bot supporting various exchanges.
 
 [Version notes](./VERSIONS.md)
 
-## To Use
+## General
+
+One bot handles one symbol(pair).
+
+When starting empty: use `lastTicker`, `lastOwn`, or a value as seed starting price.
+
+When re-starting:
+- Use `cont` to continue from last session, all uncountered offers will be countered. This method should be used when the config remains the same.
+- Use other seed methods to clear all active orders and start anew. All uncountered offers won't be countered. Use this method when config is changed.
+
+## Running
 Use [config-template](./config-template) as config reference.
 
 One bot in [bots] will market-make on one pair.
@@ -24,7 +34,7 @@ sbt assembly
 To run
 
 ```
-java -jar program.jar <path to config file> <path to log directory>
+java -jar program.jar <path to config file> <path to log directory> <path to bot cache directory>
 ```
 
 ## Config

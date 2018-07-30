@@ -5,8 +5,7 @@ import akka.stream.ActorMaterializer
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.Status.Status
-import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, StartMethods, Status}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsArray, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -17,18 +16,41 @@ import scala.util.{Failure, Success, Try}
 object OkexRestActor {
   def parseForId(js: JsValue): String = (js \ "order_id").as[Long].toString
 
-  val toOffer: JsValue => Offer = (data: JsValue) =>
+  val toOffer: JsValue => Offer = (data: JsValue) => {
+    val status = (data \ "status").as[Int] match {
+      case -1 => Status.cancelled
+      case 0 => Status.active
+      case 1 => Status.partiallyFilled
+      case 2 => Status.filled
+      case 3 => Status.cancelled
+      case _ => Status.cancelled
+    }
     new Offer(
       (data \ "order_id").as[Long].toString,
       (data \ "symbol").as[String],
       (data \ "type").as[Side],
-      (data \ "status").asOpt[Status],
-      (data \ "create_date").asOpt[Long],
+      status,
+      (data \ "create_date").as[Long],
       None,
       (data \ "amount").as[BigDecimal],
       (data \ "price").as[BigDecimal],
       (data \ "deal_amount").asOpt[BigDecimal]
     )
+  }
+
+  def parseFilled(js: JsValue, lastCounterId: Long): (Seq[Offer], Option[String]) = {
+    val filleds = (js \ "orders").as[List[JsValue]]
+      .filter(a => (a \ "status").as[Int] == OkexStatus.filled.id) // assuming partially filled orders eventually have filled status
+      .filter(a => (a \ "order_id").as[Long] > lastCounterId)
+      .map(toOffer)
+    if (filleds.isEmpty){
+      (Seq.empty[Offer], None)
+    } else {
+      val latestCounterId = filleds.head.id
+      val sorted = filleds.sortWith(_.createdAt < _.createdAt)
+      (sorted, Some(latestCounterId))
+    }
+  }
 }
 
 class OkexRestActor() extends AbsRestActor() with MyLogging {
@@ -44,7 +66,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
 
   override def start(): Unit = setOp(Some(sender()))
 
-  override def sendRequest(r: SendRequest): Unit = {
+  override def sendRequest(r: SendRest): Unit = {
 
     r match {
       case a: NewOrder =>
@@ -59,42 +81,31 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
           .post(stringifyXWWWForm(OkexRequest.restCancelOrder(a.bot.credentials, a.bot.pair, a.id)))
           .map(response => parse(a, response.body[String]))
 
-      case a: GetOrderbook =>
+      case a: GetActiveOrders =>
         ws.url(s"$url/order_history.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
           .post(stringifyXWWWForm(OkexRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.unfilled, a.page)))
           .map(response => parse(a, response.body[String]))
 
-      case a: GetOwnPastTrades =>
+      case a: GetFilledOrders =>
         ws.url(s"$url/order_history.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
           .post(stringifyXWWWForm(OkexRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1)))
           .map(response => parse(a, response.body[String]))
 
-      case a: GetOpenOrderInfo =>
-        ws.url(s"$url/order_info.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restInfoOrder(a.bot.credentials, a.bot.pair, a.id)))
-          .map(response => parse(a, response.body[String]))
-
-      case a: GetNewOrderInfo =>
-        ws.url(s"$url/order_info.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restInfoOrder(a.bot.credentials, a.bot.pair, a.id)))
-          .map(response => parse(a, response.body[String]))
-
-      case a: GetTicker =>
-        ws.url(s"$url/ticker.do")
-          .addQueryStringParameters(OkexRequest.restTicker(a.bot.pair).toSeq: _*)
-          .get()
-          .map(response => parse(a, response.body[String]))
+      case a: GetTickerStartPrice =>
+          ws.url(s"$url/ticker.do")
+            .addQueryStringParameters(OkexRequest.restTicker(a.bot.pair).toSeq: _*)
+            .get()
+            .map(response => parse(a, response.body[String]))
     }
   }
 
-  def parse(a: SendRequest, raw: String): Unit = {
+  def parse(a: SendRest, raw: String): Unit = {
+    val arriveMs = System.currentTimeMillis()
     info(
       s"""
-         |Request: As: ${a.as.getOrElse("")}, ${a.bot.exchange} : ${a.bot.pair}
+         |Request: As: $a, ${a.bot.exchange} : ${a.bot.pair}
          |Response:
          |$raw
        """.stripMargin)
@@ -110,32 +121,25 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
         else {
           val book = a.book
           a match {
-            case t: GetTicker =>
-              val lastTrade = (js \ "ticker" \ "last").as[BigDecimal]
-              book ! GotStartPrice(Some(lastTrade))
+            case t: GetTickerStartPrice =>
+                val lastTrade = (js \ "ticker" \ "last").as[BigDecimal]
+                book ! GotTickerStartPrice(Some(lastTrade), arriveMs, t)
 
-            case t: GetOwnPastTrades =>
-              val trade = (js \ "orders").as[JsArray].head
-              if (trade.isDefined) book ! GotStartPrice(Some((trade \ "price").as[BigDecimal])) else book ! GotStartPrice(None)
+            case t: GetFilledOrders =>
+              val res = OkexRestActor.parseFilled(js, t.lastCounterId.toLong)
+              book ! GotUncounteredOrders(res._1, res._2, isSortedFromOldest = true, arriveMs, t)
 
-            case t: GetOrderbook =>
-              val orders = (js \ "orders").as[List[JsValue]]
-              val res = orders.map(OkexRestActor.toOffer)
+            case t: GetActiveOrders =>
+              val res = (js \ "orders").as[List[JsValue]].map(OkexRestActor.toOffer)
               val currentPage = (js \ "currency_page").as[Int]
               val nextPage = if ((js \ "page_length").as[Int] > 200) true else false
-              book ! GotOrderbook(res, currentPage, nextPage)
+              book ! GotActiveOrders(res, currentPage, nextPage, arriveMs, t)
 
-            case t: NewOrder => op foreach(_ ! GotNewOrderId(OkexRestActor.parseForId(js), t.as, t))
+            case t: NewOrder =>
+              val id = OkexRestActor.parseForId(js)
+              op foreach(_ ! GotNewOrderId(id, arriveMs, t))
 
-            case t: GetNewOrderInfo =>
-              val order = (js \ "orders").as[JsArray].head
-              if (order.isDefined) op foreach(_ ! GotNewOrderInfo(OkexRestActor.toOffer(order.as[JsValue]), t.newOrder, book)) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
-
-            case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String], t.as)
-
-            case t: GetOpenOrderInfo =>
-              val order = (js \ "orders").as[JsArray].head
-              if (order.isDefined) book ! GotOpenOrderInfo(OkexRestActor.toOffer(order.as[JsValue])) else errorShutdown(ShutdownCode.fatal, -10, s"OkexParser#parseRest Undefined orderInfo $raw")
+            case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String], t.as, arriveMs, t)
 
             case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
           }
@@ -154,7 +158,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
     }
   }
 
-  private def pipeErrors(code: Int, msg: String, sendRequest: SendRequest): Unit = {
+  private def pipeErrors(code: Int, msg: String, sendRequest: SendRest): Unit = {
     code match {
       case 10009 | 10010 | 10011 | 10014 | 10016 | 10024 | 1002 => errorIgnore(code, msg)
       case 20100 | 10007 | 10005 | -1000 => errorRetry(sendRequest, code, msg)

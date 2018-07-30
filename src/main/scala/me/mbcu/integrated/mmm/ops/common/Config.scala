@@ -40,9 +40,9 @@ object Env {
 
 }
 
-object StartingPrice extends Enumeration {
-  type StartingPrice = Value
-  val lastTicker, lastOwn, contAsIs = Value
+object StartMethods extends Enumeration {
+  type StartMethods = Value
+  val lastTicker, lastOwn, cont = Value
 }
 
 case class Bot(
@@ -66,6 +66,8 @@ case class Bot(
               )
 
 object Bot {
+  val millisFileFormat = "%s_%s"
+
   implicit val jsonFormat: OFormat[Bot] = Json.format[Bot]
 
   object Implicits {
@@ -128,5 +130,6 @@ object Config {
       .groupBy(_._1._1)
       .mapValues(_.values.toList)
   }
+
 }
 

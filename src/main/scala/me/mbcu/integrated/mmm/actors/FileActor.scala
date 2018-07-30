@@ -1,51 +1,96 @@
 package me.mbcu.integrated.mmm.actors
 
+import java.io._
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardWatchEventKinds._
+import java.nio.file.{Files, Paths}
+
 import akka.actor.{Actor, ActorRef, Props}
+import com.beachape.filemanagement.Messages._
 import com.beachape.filemanagement.MonitorActor
 import com.beachape.filemanagement.RegistryTypes._
-import com.beachape.filemanagement.Messages._
-import java.io.{BufferedWriter, FileWriter}
-import java.nio.file.Paths
-import java.nio.file.StandardWatchEventKinds._
+import me.mbcu.integrated.mmm.actors.BaseActor.ConfigReady
+import me.mbcu.integrated.mmm.actors.FileActor.millisFileName
+import me.mbcu.integrated.mmm.actors.OrderRestActor._
+import me.mbcu.integrated.mmm.ops.common.{Bot, Config, BotCache}
+import me.mbcu.integrated.mmm.utils.MyLogging
+import play.api.libs.json.Json
 
-import me.mbcu.integrated.mmm.actors.FileActor.ConfigReady
-import me.mbcu.integrated.mmm.ops.common.Config
-import play.api.libs.json.{JsResult, Json}
+import scala.util.{Failure, Success, Try}
 
-import scala.util.Try
+object FileActor extends MyLogging {
+  def props(configPath: String, millisPath: String): Props = Props(new FileActor(configPath, millisPath))
 
-object FileActor {
-  def props(path : String): Props = Props(new FileActor(path))
+  def readConfig(path: String): Option[Config] = {
+    val source = scala.io.Source.fromFile(path)
+    val rawJson = try source.mkString finally source.close()
+    Try(Json.parse(rawJson).as[Config]) match {
+      case Success(config) => Some(config)
+      case Failure(e) =>
+        error(e.getMessage)
+        None
+    }
+  }
 
-  case class ConfigReady(config: Try[Config])
+
+  def millisFileName(msPath: String, bot: Bot): String = msPath + Bot.millisFileFormat.format(bot.exchange.toString, bot.pair)
+
+  def readLastCounterId(path: String, bot: Bot): BotCache = {
+    val fName = millisFileName(path, bot)
+    if (!Files.exists(Paths.get(fName))) {
+      val pw = new PrintWriter(new File(fName))
+      pw.close()
+    }
+    val raw = readFile(fName)
+    Try(Json.parse(raw).as[BotCache]) match {
+      case Success(bc) => bc
+      case Failure(e) =>
+        e.getMessage match {
+          case a if a contains "No content to map" => error("File is empty. Creating default.")
+          case _ => error _
+        }
+        BotCache.default
+    }
+  }
+
+  def readFile(path: String): String = {
+    val source = scala.io.Source.fromFile(path)
+    try source.mkString finally source.close()
+  }
+
+  def writeFile(path: String, content: String): Unit = Files.write(Paths.get(path), content.getBytes(StandardCharsets.UTF_8))
+
 }
 
-class FileActor(path : String) extends Actor {
-  private var parents: Option[ActorRef] = None
+class FileActor(cfgPath: String, msPath: String) extends Actor {
+  private var base: Option[ActorRef] = None
 
   override def receive: Receive = {
 
     case "start" =>
-      parents = Some(sender)
-      val source = scala.io.Source.fromFile(path)
-      val rawJson = try source.mkString finally source.close()
-      val config: Try[Config] = Try(Json.parse(rawJson).as[Config])
-      parents foreach (_ ! ConfigReady(config))
+      import FileActor._
+      base = Some(sender)
+      sender ! ConfigReady(readConfig(cfgPath))
 
     case "listen" =>
       val fileMonitorActor = context.actorOf(MonitorActor(concurrency = 2))
-      val modifyCallbackFile: Callback = { path => println(s"Something was modified in a file: $path")}
-      val file = Paths get path
+      val modifyCallbackFile: Callback = { path => println(s"Something was modified in a file: $path") }
+      val file = Paths get cfgPath
       /*
         This will receive callbacks for just the one file
       */
       fileMonitorActor ! RegisterCallback(
         event = ENTRY_MODIFY,
         path = file,
-        callback =  modifyCallbackFile
+        callback = modifyCallbackFile
       )
 
-    case _ => println("FileActor#start: _")
+    case GetLastCounter(book, bot, as) => book ! GotLastCounter(FileActor.readLastCounterId(msPath, bot), as)
+
+
+    case WriteLastCounter(book, bot, m) => FileActor.writeFile(millisFileName(msPath, bot), Json.toJson(m).toString())
+
   }
+
 
 }

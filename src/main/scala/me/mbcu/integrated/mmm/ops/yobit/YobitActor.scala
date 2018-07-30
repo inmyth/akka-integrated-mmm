@@ -18,16 +18,8 @@ object YobitActor {
 
   def parseForOrderId(js: JsValue): String = (js \ "return" \ "order_id").as[Long].toString
 
-  def parseLastOwnTradePrice(js: JsValue): Option[BigDecimal] = {
-    (js \ "return").as[JsObject].fields.headOption match {
-      case Some(v) => (v._2 \ "rate").asOpt[BigDecimal]
-      case _ => None
-    }
-  }
 
-  def parseOrderInfo(js: JsValue): Offer = toOffer((js \ "return").as[JsObject].fields.head)
-
-  def toOffer(head: (String, JsValue)): Offer = {
+  val activeToOffer: Tuple2[Long, JsValue] => Offer = (head: Tuple2[Long, JsValue]) => {
     val prc =
       if ((head._2 \ "start_amount").isDefined) {
         val price = (head._2 \ "start_amount").as[BigDecimal]
@@ -38,17 +30,17 @@ object YobitActor {
         (price, None)
       }
     new Offer(
-      head._1,
+      head._1.toString,
       (head._2 \ "pair").as[String],
       (head._2 \ "type").as[Side],
       (head._2 \ "status").as[Int] match {
         //status: 0 - active, 1 - fulfilled and closed, 2 - cancelled, 3 - cancelled after partially fulfilled.
-        case 0 => Some(Status.unfilled)
-        case 1 => Some(Status.filled)
-        case 2 => Some(Status.cancelled)
-        case _ => Some(Status.cancelled)
+        case 0 => Status.active
+        case 1 => Status.filled
+        case 2 => Status.cancelled
+        case _ => Status.cancelled
       },
-      Some((head._2 \ "timestamp_created").as[String].toLong),
+      (head._2 \ "timestamp_created").as[String].toLong * 1000L,
       None,
       prc._1,
       (head._2 \ "rate").as[BigDecimal],
@@ -56,7 +48,46 @@ object YobitActor {
     )
   }
 
-  def parseActiveOrders(js: JsValue): Seq[Offer] = (js \ "return").as[JsObject].fields.map(toOffer)
+  def sumOffersOnAmount(a: Offer)(b: Offer): Offer =
+    new Offer(a.id, a.symbol, a.side, a.status, a.createdAt, a.updatedAt, a.quantity + b.quantity, a.price, None)
+
+
+  val filledToOffer : Tuple2[Long, JsValue] => Offer = (head: Tuple2[Long, JsValue]) => {
+      new Offer(
+        (head._2 \ "order_id").as[String],
+        (head._2 \ "pair").as[String],
+        (head._2 \ "type").as[Side],
+        Status.filled,
+        (head._2 \ "timestamp").as[String].toLong * 1000L,
+        None,
+        (head._2 \ "amount").as[BigDecimal],
+        (head._2 \ "rate").as[BigDecimal],
+        None
+      )
+  }
+
+  def parseFilled(js: JsValue, lastCounterId: Long): (Seq[Offer], Option[String]) = {
+    val a = parseReturn(js)
+    val latestCounterId = a.head._1
+    val uncountereds = a.map(c => (c._1.toLong, c._2))
+      .filter(_._1 > lastCounterId)
+      .map(YobitActor.filledToOffer).groupBy(_.id)
+      .map(d => {
+        val sumQuantity = d._2.map(_.quantity).sum
+        val a = d._2.head
+        val v = new Offer(a.id, a.symbol, a.side, a.status, a.createdAt, a.updatedAt, sumQuantity, a.price, None)
+        val k = a.id.toLong
+        (k,v)
+      })
+      .toSeq
+      .sortWith(_._1 < _._1)
+      .map(_._2)
+    (uncountereds, Some(latestCounterId))
+  }
+
+  def parseOrders(js: JsValue, t:Tuple2[Long, JsValue] => Offer): Seq[Offer] = parseReturn(js).map(c => (c._1.toLong, c._2)).map(t)
+
+  def parseReturn(js: JsValue): Seq[(String, JsValue)] = (js \ "return").as[JsObject].fields
 
   def parseTicker(js: JsValue, symbol: String): Option[BigDecimal] = Some((js \ symbol \ "last").as[BigDecimal])
 
@@ -75,9 +106,9 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
   override def start(): Unit = setOp(Some(sender()))
 
-  override def sendRequest(r: AbsRestActor.SendRequest): Unit = {
+  override def sendRequest(r: AbsRestActor.SendRest): Unit = {
     r match {
-      case a: GetTicker =>
+      case a: GetTickerStartPrice =>
         ws.url(url.format("ticker", a.bot.pair))
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
@@ -86,17 +117,13 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
       case a: CancelOrder => tradeRequest(a, YobitRequest.cancelOrder(a.bot.credentials, a.id))
 
-      case a: GetOrderbook => tradeRequest(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
+      case a: GetActiveOrders => tradeRequest(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
 
-      case a: GetOwnPastTrades => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
-
-      case a: GetOpenOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
-
-      case a: GetNewOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
+      case a: GetFilledOrders => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
 
     }
 
-    def tradeRequest(a: SendRequest, r: YobitParams): Unit = {
+    def tradeRequest(a: SendRest, r: YobitParams): Unit = {
       ws.url(s"$urlTrade")
         .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
         .addHttpHeaders("Key" -> a.bot.credentials.pKey)
@@ -107,10 +134,11 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
   }
 
-  def parse(a: AbsRestActor.SendRequest, request: String, raw: String): Unit = {
+  def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
+    val arriveMs = System.currentTimeMillis()
     info(
       s"""
-         |Request: $request, As: ${a.as.getOrElse("")}, ${a.bot.exchange} : ${a.bot.pair}
+         |Request: $request, As: $a, ${a.bot.exchange} : ${a.bot.pair}
          |Response:
          |$raw
        """.stripMargin)
@@ -121,7 +149,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
         val book = a.book
         a match {
 
-          case t: GetTicker => book ! GotStartPrice(YobitActor.parseTicker(js, a.bot.pair))
+          case t: GetTickerStartPrice => book ! GotTickerStartPrice(YobitActor.parseTicker(js, a.bot.pair), arriveMs, t)
 
           case _ =>
             (js \ "success").as[Int] match {
@@ -131,7 +159,12 @@ class YobitActor() extends AbsRestActor() with MyLogging {
                   case m if m.contains("invalid nonce (has already been used)") => errorRetry(a, 0, m, shouldEmail = false)
                   case m if m.contains("invalid sign") | m.contains("invalid key, sign, method or nonce") =>
                     errorShutdown(ShutdownCode.fatal, 0, s"$request $m")
-                  case m if m.contains("The given order has already been cancelled.") => errorIgnore(0, msg)
+                  case m if m.contains("The given order has already been cancelled.") =>
+                    book ! GotOrderCancelled(a.asInstanceOf[CancelOrder].id, a.as, arriveMs,a.asInstanceOf[CancelOrder])
+                    errorIgnore(0, msg)
+                  case m if m.contains("The given order has already been closed and cannot be cancelled.") =>
+                    book ! GotOrderCancelled(a.asInstanceOf[CancelOrder].id, a.as, arriveMs, a.asInstanceOf[CancelOrder])
+                    errorIgnore(0, msg)
                   case m if m.contains("Insufficient funds in wallet of the first currency of the pair") => errorIgnore(0, msg)
                   case _ => errorIgnore(0, msg)
                 }
@@ -139,23 +172,21 @@ class YobitActor() extends AbsRestActor() with MyLogging {
               case 1 =>
                 a match {
 
-                  case t: GetTicker => book ! GotStartPrice(YobitActor.parseTicker(js, a.bot.pair))
+                  case t: GetFilledOrders =>
+                    val lastCounterId = t.lastCounterId.toLong
+                    val (uncountereds, latestCounterId) = if ((js \ "return").isDefined) YobitActor.parseFilled(js, lastCounterId) else (Seq.empty[Offer], None)
+                    book ! GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest = true, arriveMs, t)
 
-                  case t: GetOwnPastTrades => book ! GotStartPrice(YobitActor.parseLastOwnTradePrice(js))
+                  case t: NewOrder =>
+                    val id = YobitActor.parseForOrderId(js)
+                    op foreach(_ ! GotNewOrderId(id, arriveMs, t))
 
-                  case t: NewOrder => op foreach(_ ! GotNewOrderId(YobitActor.parseForOrderId(js), t.as, t))
+                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as, arriveMs, t)
 
-                  case t: GetNewOrderInfo => op foreach(_ ! GotNewOrderInfo(YobitActor.parseOrderInfo(js), t.newOrder, book))
-
-                  case t: GetOpenOrderInfo => book ! GotOpenOrderInfo(YobitActor.parseOrderInfo(js))
-                  //{"success":0,"error":"A996DD2E"} // if order doesn't exist
-                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as)
-
-                  case t: GetOrderbook =>
-                    val activeOrders =
-                      if ((js \ "return").isDefined) YobitActor.parseActiveOrders(js) else Seq.empty[Offer]
+                  case t: GetActiveOrders =>
+                    val activeOrders = if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
                     //{"success":1} // if there's no active order
-                    book ! GotOrderbook(activeOrders, 1, nextPage = false)
+                    book ! GotActiveOrders(activeOrders, 1, nextPage = false, arriveMs, t)
 
                   case _ => error(s"Unknown YobitActor#parse : $raw")
                 }
@@ -164,7 +195,9 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
       case Failure(e) =>
         raw match {
-          case u: String if u.contains("<html>") => errorRetry(a, 0, raw)
+          case m if m contains "<html>"  => errorRetry(a, 0, raw)
+          case m if m contains "Ddos" => errorRetry(a, 0, m, shouldEmail = false)
+          case m if m.isEmpty => errorRetry(a, 0, m, shouldEmail = false)
           case _ => errorIgnore(0, s"Unknown YobitActor#parse : $raw")
         }
     }

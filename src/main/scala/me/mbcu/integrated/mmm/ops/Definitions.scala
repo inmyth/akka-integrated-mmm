@@ -2,7 +2,7 @@ package me.mbcu.integrated.mmm.ops
 
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsExchange
-import me.mbcu.integrated.mmm.ops.common.AbsRestActor.SendRequest
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.SendRest
 import me.mbcu.integrated.mmm.ops.fcoin.Fcoin
 import me.mbcu.integrated.mmm.ops.okex.OkexRest
 import me.mbcu.integrated.mmm.ops.yobit.Yobit
@@ -50,17 +50,13 @@ object Definitions {
 
   case class ErrorIgnore(code: Int, msg: String, shouldEmail: Boolean)
   case class ErrorShutdown(shutdown: ShutdownCode, code: Int, msg: String)
-  case class ErrorRetryRest(sendRequest: SendRequest, code: Int, msg: String, shouldEmail: Boolean)
+  case class ErrorRetryRest(sendRequest: SendRest, code: Int, msg: String, shouldEmail: Boolean)
 
 
-  object Settings extends Enumeration{
-    type Settings = Value
-    val cachingEmailSeconds = Value(60)
-    val orderbookLogSeconds = Value(30)
-    val int500 = Value(500)
-    val int1 = Value(1)
-    val int5 = Value(5)
-
+  object Settings {
+    val cachingEmailSeconds:Int = 60
+    val getActiveSeconds:Int = 5
+    val getFilledSeconds:Int = 5
   }
 
 

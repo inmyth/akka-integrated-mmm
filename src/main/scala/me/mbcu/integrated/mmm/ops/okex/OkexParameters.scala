@@ -9,7 +9,7 @@ import play.api.libs.json._
 
 object OkexStatus extends Enumeration {
   type OkexStatus = Value
-  val filled = Value(1)
+  val filled = Value(2)
   val unfilled = Value(0)
 
   implicit val enumFormat = new Format[OkexStatus] {

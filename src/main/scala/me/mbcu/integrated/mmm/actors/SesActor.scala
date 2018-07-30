@@ -49,7 +49,7 @@ class SesActor(sesKey : Option[String], sesSecret : Option[String], emails : Opt
 
     case CacheMessages(msg, shutdownCode) =>
       sendCancellable foreach (_.cancel())
-      sendCancellable = Some(context.system.scheduler.scheduleOnce(Definitions.Settings.cachingEmailSeconds.id second, self, "execute send"))
+      sendCancellable = Some(context.system.scheduler.scheduleOnce(Definitions.Settings.cachingEmailSeconds second, self, "execute send"))
       cache += ((msg, shutdownCode))
 
     case "execute send" =>

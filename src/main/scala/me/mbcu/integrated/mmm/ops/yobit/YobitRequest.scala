@@ -7,7 +7,7 @@ object YobitRequest extends AbsRequest {
 
   case class YobitParams(sign: String, params: String)
 
-  def nonce : Long = System.currentTimeMillis() - Yobit.nonceFactor
+  def nonce : Long = System.currentTimeMillis() / 1000 - Yobit.nonceFactor
 
   def addNonce(params: Map[String, String]): Map[String, String] = params + ("nonce" -> nonce.toString)
 
@@ -24,7 +24,7 @@ object YobitRequest extends AbsRequest {
     val params = Map(
       "method" -> "TradeHistory", //default order is DESC
       "pair" -> pair,
-      "count" -> 10.toString
+      "count" -> 100.toString
     )
     toYobitParams(params, secret)
   }
