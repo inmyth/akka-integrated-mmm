@@ -110,6 +110,11 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
          |$raw
        """.stripMargin)
 
+    a match {
+      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case _ =>
+    }
+
     val x = Try(Json parse raw)
     x match {
       case Success(js) =>
@@ -135,11 +140,9 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
               val nextPage = if ((js \ "page_length").as[Int] > 200) true else false
               book ! GotActiveOrders(res, currentPage, nextPage, arriveMs, t)
 
-            case t: NewOrder =>
-              val id = OkexRestActor.parseForId(js)
-              op foreach(_ ! GotNewOrderId(id, arriveMs, t))
+            case t: CancelOrder => // not handled
 
-            case t: CancelOrder => book ! GotOrderCancelled((js \ "order_id").as[String], t.as, arriveMs, t)
+            case t: NewOrder => // not handled
 
             case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
           }

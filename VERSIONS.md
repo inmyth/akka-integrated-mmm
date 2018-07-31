@@ -1,3 +1,10 @@
+0.5.2
+- fixed bug in grow
+
+0.5.1
+- fixed bug on unfunded newOrder : needs to clear the set in op for each successful request
+- fixed wiring
+
 0.5.0
 - revamped
 - input last order sent/ts
@@ -6,7 +13,6 @@
 - active orders : seed and trim, filled orders : counter. no dependency relation between them
 - counter mechanism: store last countered id on bot cache, read it before getFilled is called, and use it as lower bound of all uncountered orders
     - different exchange has different indicator
-
 
 0.4.3
 - fixed small bug in dump

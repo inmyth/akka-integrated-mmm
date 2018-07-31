@@ -18,11 +18,11 @@ object OpRestActor extends MyLogging {
 
   def isSafeForSeed(q: mutable.Queue[SendRest], nos: mutable.Set[NewOrder], bot: Bot): Boolean =
     (q.filter(_.bot == bot) ++ nos.filter(_.bot == bot).toSeq)
-    .collect {
-      case a: NewOrder => a
-      case a: CancelOrder => a
-    }
-    .isEmpty
+      .collect {
+        case a: NewOrder => a
+        case a: CancelOrder => a
+      }
+      .isEmpty
 
 }
 
@@ -60,7 +60,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
 
     case QueueRequest(seq) => q ++= seq
 
-    case a: GotNewOrderId => nos -= a.send
+    case a: GotNewOrder => nos -= a.send
 
     case CheckSafeForSeed(ref, bot) => ref ! SafeForSeed(OpRestActor.isSafeForSeed(q, nos, bot))
 

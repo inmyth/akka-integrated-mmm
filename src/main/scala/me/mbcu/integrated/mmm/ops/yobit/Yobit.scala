@@ -14,7 +14,7 @@ object Yobit extends AbsExchange {
 
   override val endpoint: String = "https://yobit.net/api/3/%s/%s"
 
-  override val intervalMillis: Int = 800
+  override val intervalMillis: Int = 1000
 
   val endpointTrade: String = "https://yobit.net/tapi/"
 

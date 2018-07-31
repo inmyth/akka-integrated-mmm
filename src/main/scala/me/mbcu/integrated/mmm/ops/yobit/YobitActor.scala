@@ -143,6 +143,11 @@ class YobitActor() extends AbsRestActor() with MyLogging {
          |$raw
        """.stripMargin)
 
+    a match {
+      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case _ =>
+    }
+
     val x = Try(Json parse raw)
     x match {
       case Success(js) =>
@@ -177,16 +182,14 @@ class YobitActor() extends AbsRestActor() with MyLogging {
                     val (uncountereds, latestCounterId) = if ((js \ "return").isDefined) YobitActor.parseFilled(js, lastCounterId) else (Seq.empty[Offer], None)
                     book ! GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest = true, arriveMs, t)
 
-                  case t: NewOrder =>
-                    val id = YobitActor.parseForOrderId(js)
-                    op foreach(_ ! GotNewOrderId(id, arriveMs, t))
-
-                  case t: CancelOrder => book ! GotOrderCancelled(YobitActor.parseForOrderId(js), t.as, arriveMs, t)
-
                   case t: GetActiveOrders =>
                     val activeOrders = if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
                     //{"success":1} // if there's no active order
                     book ! GotActiveOrders(activeOrders, 1, nextPage = false, arriveMs, t)
+
+                  case a: CancelOrder =>  // not handled
+
+                  case a: NewOrder => // not handled
 
                   case _ => error(s"Unknown YobitActor#parse : $raw")
                 }
@@ -195,7 +198,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
       case Failure(e) =>
         raw match {
-          case m if m contains "<html>"  => errorRetry(a, 0, raw)
+          case m if m contains "<!DOCTYPE html>"  => errorRetry(a, 0, raw)
           case m if m contains "Ddos" => errorRetry(a, 0, m, shouldEmail = false)
           case m if m.isEmpty => errorRetry(a, 0, m, shouldEmail = false)
           case _ => errorIgnore(0, s"Unknown YobitActor#parse : $raw")

@@ -35,7 +35,7 @@ object AbsRestActor {
 
   case class GetTickerStartPrice(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class GotNewOrderId(id: String, override val arriveMs: Long, override val send: NewOrder) extends GotRest
+  case class GotNewOrder(override val arriveMs: Long, override val send: NewOrder) extends GotRest
 
   case class GotTickerStartPrice(price: Option[BigDecimal], override val arriveMs: Long, override val send: GetTickerStartPrice) extends GotRest
 

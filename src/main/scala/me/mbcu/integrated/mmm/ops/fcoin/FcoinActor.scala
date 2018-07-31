@@ -129,6 +129,11 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
          |$raw
        """.stripMargin)
 
+    a match {
+      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case _ =>
+    }
+
     val x = Try(Json parse raw)
     x match {
       case Success(js) =>
@@ -155,11 +160,10 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
               val res = data.as[Seq[JsValue]].map(FcoinActor.toOffer)
               a.book ! GotActiveOrders(res, a.page, if (res.size == 100) true else false, arriveMs, a)
 
-            case a: NewOrder =>
-              val id = data.as[String]
-              op foreach(_ ! GotNewOrderId(id, arriveMs, a))
+            case a: CancelOrder =>  // not handled
 
-            case a: CancelOrder => a.book ! GotOrderCancelled(a.id, a.as, arriveMs, a)
+            case a: NewOrder => // not handled
+
 
           }
         }
