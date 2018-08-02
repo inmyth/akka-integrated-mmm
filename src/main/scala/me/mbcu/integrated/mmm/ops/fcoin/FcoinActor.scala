@@ -121,13 +121,8 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
   }
 
   def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
+    info(logResponse(a, raw))
     val arriveMs = System.currentTimeMillis()
-    info(
-      s"""
-         |Request: $request, ${a.bot.exchange} : ${a.bot.pair}
-         |Response:
-         |$raw
-       """.stripMargin)
 
     a match {
       case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))

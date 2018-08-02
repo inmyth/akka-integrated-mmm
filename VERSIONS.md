@@ -1,3 +1,7 @@
+0.5.3
+- made getActive arrive before getFilled: seed happens before counter
+- added delete duplicates
+
 0.5.2
 - fixed bug in grow
 

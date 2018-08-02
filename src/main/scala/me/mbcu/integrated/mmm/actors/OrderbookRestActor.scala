@@ -61,7 +61,7 @@ class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyL
 
     case "keep or clear orderbook" =>
       bot.seed match {
-        case a if a.equalsIgnoreCase(StartMethods.lastOwn.toString) | a.equalsIgnoreCase(StartMethods.lastTicker.toString) =>
+//        case a if a.equalsIgnoreCase(StartMethods.lastOwn.toString) | a.equalsIgnoreCase(StartMethods.lastTicker.toString) =>
 //          if (sels.isEmpty && buys.isEmpty) self ! "init price" else cancelOrders((buys ++ sels).toSeq.map(_._2), As.ClearOpenOrders)
         case _ =>
           maintain()

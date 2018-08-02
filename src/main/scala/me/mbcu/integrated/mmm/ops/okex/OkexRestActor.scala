@@ -102,13 +102,8 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
   }
 
   def parse(a: SendRest, raw: String): Unit = {
+    info(logResponse(a, raw))
     val arriveMs = System.currentTimeMillis()
-    info(
-      s"""
-         |Request: As: $a, ${a.bot.exchange} : ${a.bot.pair}
-         |Response:
-         |$raw
-       """.stripMargin)
 
     a match {
       case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))

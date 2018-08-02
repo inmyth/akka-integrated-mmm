@@ -37,4 +37,39 @@ class OfferTest extends FunSuite {
     assert(q.head.price < q(1).price)
   }
 
+
+  test ("get duplicates from list with duplicates") {
+    val symbol = "noah_rur"
+    val active = Status.active
+    val side = Side.sell // symbol, side, BigDecimal("0.07742766"),
+    val offers = Seq(
+      Offer("2073861098400280", symbol, side, active, 1L, None, BigDecimal(1972), BigDecimal(".07742766"), None),
+      Offer("2073861098400222", symbol, side, active, 2L, None, BigDecimal(1986), BigDecimal(".07688943"), None),
+      Offer("2073861098403259", symbol, side, active, 3L, None, BigDecimal(2000), BigDecimal(".07635494"), None),
+      Offer("2073861098402160", symbol, side, active, 4L, None, BigDecimal(2000), BigDecimal(".07635494"), None),
+      Offer("2073861098403220", symbol, side, active, 5L, None, BigDecimal(2014), BigDecimal(".07582417"), None),
+      Offer("2073861098402116", symbol, side, active, 6L, None, BigDecimal(2014), BigDecimal(".07582417"), None),
+      Offer("2073861098403227", symbol, side, active, 7L, None, BigDecimal(2028), BigDecimal(".07582400"), None),
+      Offer("2073861098402119", symbol, side, active, 8L, None, BigDecimal(2014), BigDecimal(".07582400"), None)
+    )
+    scala.util.Random.shuffle(offers)
+    val res = Offer.getDuplicates(offers)
+    assert(res.size === 2)
+    assert(res.head.price === BigDecimal(".07582417"))
+    assert(res.last.price === BigDecimal(".07635494"))
+
+    val noDup = Seq(
+      Offer("2073861098400280", symbol, side, active, 1L, None, BigDecimal(1972), BigDecimal(".07742766"), None),
+      Offer("2073861098400222", symbol, side, active, 2L, None, BigDecimal(1986), BigDecimal(".07688943"), None),
+      Offer("2073861098402160", symbol, side, active, 4L, None, BigDecimal(2000), BigDecimal(".07635494"), None),
+      Offer("2073861098403220", symbol, side, active, 5L, None, BigDecimal(2014), BigDecimal(".07582417"), None),
+      Offer("2073861098403227", symbol, side, active, 7L, None, BigDecimal(2028), BigDecimal(".07582400"), None),
+      Offer("2073861098402119", symbol, side, active, 8L, None, BigDecimal(2014), BigDecimal(".07582400"), None)
+    )
+    scala.util.Random.shuffle(noDup)
+    val res2 = Offer.getDuplicates(noDup)
+    assert(res2.size === 0)
+  }
+
+
 }

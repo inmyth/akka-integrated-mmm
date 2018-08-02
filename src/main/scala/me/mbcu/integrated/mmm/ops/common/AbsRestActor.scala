@@ -5,7 +5,6 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
-import me.mbcu.integrated.mmm.ops.common.StartMethods.StartMethods
 
 object AbsRestActor {
 
@@ -75,5 +74,23 @@ abstract class AbsRestActor() extends Actor {
   }
 
   def stringifyXWWWForm(params: Map[String, String]): String = params.map(r => s"${r._1}=${r._2}").mkString("&")
+
+  def logResponse(a: SendRest, raw: String): String = {
+
+    def bound(r: String, max: Int): String = if (raw.length > max) s"${r.substring(0, max)}..." + "..." else r
+
+    val response = a match  {
+      case t: GetFilledOrders => bound(raw, max = 200)
+
+      case t: GetActiveOrders => bound(raw, max = 200)
+
+      case _ => raw
+    }
+    s"""
+       |Request: As: $a, ${a.bot.exchange} : ${a.bot.pair}
+       |Response:
+       |$response
+     """.stripMargin
+  }
 
 }

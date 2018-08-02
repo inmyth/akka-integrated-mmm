@@ -45,7 +45,6 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
     case "start" =>
       op = Some(sender())
       fileActor ! GetLastCounter(self, bot, As.Init)
-      qActiveOrders(Seq.empty[Offer], System.currentTimeMillis(), page = 1, As.Init)
 
     case GotLastCounter(botCache, as) => qFilledOrders(Seq.empty[Offer], botCache.lastCounteredId, as)
 
@@ -54,7 +53,6 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
         qActiveOrders(offers ++ send.cache, send.lastMs, currentPage + 1, send.as)
       }
       else {
-        scheduleGetActive(Settings.getActiveSeconds)
         val activeOrders = send.cache ++ offers
         val (buys,sels) = Offer.splitToBuysSels(activeOrders)
         send.as match {
@@ -64,46 +62,48 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
               case a if a.equals(StartMethods.lastTicker.toString) =>
                 qClearOrders(activeOrders, As.Init)
                 queue1(GetTickerStartPrice(As.Init))
-              case a if a.equals(StartMethods.lastOwn.toString) =>
-                qClearOrders(activeOrders, As.Init)
               case _ =>
                 qClearOrders(activeOrders, As.Init)
                 val seed = initialSeed(Seq.empty[Offer], Seq.empty[Offer], BigDecimal(bot.seed))
                 qSeed(seed)
             }
           case As.RoutineCheck =>
-            (buys.size, sels.size) match {
-              case (a,b) if a == 0 && b != 0 => qSeed(grow(buys, sels, Side.buy))
-              case (a,b) if a != 0 && b == 0 => qSeed(grow(buys, sels, Side.sell))
-              case _ => // seeding while not empty usually causes doubles
+            val (dupBuys, dupSels) = (Offer.getDuplicates(buys), Offer.getDuplicates(sels))
+            (dupBuys.size, dupSels.size) match {
+              case (0,0) =>
+                qSeed(grow(buys, sels, Side.buy) ++ grow(buys, sels, Side.sell))
+                if(bot.isStrictLevels) qClearOrders(trim(buys, sels, Side.sell) ++ trim(buys, sels, Side.buy), As.Trim)
+              case _ => qClearOrders(dupBuys ++ dupSels, As.Trim)
             }
-            if(bot.isStrictLevels) qClearOrders(trim(buys, sels, Side.sell) ++ trim(buys, sels, Side.buy), As.Trim)
+
           case _ => // not handled
         }
         self ! LogActives(arriveMs, buys, sels)
       }
 
     case GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest, arriveMs, send) =>
-      scheduleGetFilled(Settings.getFilledSeconds)
       fileActor ! WriteLastCounter(self, bot, BotCache(latestCounterId))
       send.as match {
         case As.Init =>
           bot.seed match {
-            case a if a.equals(StartMethods.cont.toString) => qCounter(uncountereds)
-            case a if a.equals(StartMethods.lastOwn.toString) => // ignore
-              Offer.sortTimeDesc(uncountereds).headOption match {
-                case Some(offer) => qSeed(initialSeed(Seq.empty[Offer], Seq.empty[Offer], offer.price))
-                case _ => // no lastOwn
-              }
-            case _ => // ignore
+            case a if a.equals(StartMethods.cont.toString) =>
+              qCounter(uncountereds)
+              scheduleGetFilled(Settings.getFilledSeconds)
+            case _ => qActiveOrders(Seq.empty[Offer], System.currentTimeMillis(), page = 1, As.Init)
           }
-        case As.RoutineCheck => qCounter(uncountereds)
+        case As.RoutineCheck =>
+          qCounter(uncountereds)
+          scheduleGetFilled(Settings.getFilledSeconds)
+
         case _ => // not handled
       }
+      if (uncountereds.isEmpty) self ! "get active orders"
 
     case GotTickerStartPrice(price, arriveMs, send) => // start ownTicker
       price match {
-        case Some(p) => qSeed(initialSeed(Seq.empty[Offer], Seq.empty[Offer], p))
+        case Some(p) =>
+          qSeed(initialSeed(Seq.empty[Offer], Seq.empty[Offer], p))
+          scheduleGetFilled(Settings.getFilledSeconds)
         case _ => // no ticker price found
       }
 
