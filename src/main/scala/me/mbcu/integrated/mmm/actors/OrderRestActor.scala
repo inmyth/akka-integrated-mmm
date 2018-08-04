@@ -73,7 +73,7 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
               case (0,0) =>
                 qSeed(grow(buys, sels, Side.buy) ++ grow(buys, sels, Side.sell))
                 if(bot.isStrictLevels) qClearOrders(trim(buys, sels, Side.sell) ++ trim(buys, sels, Side.buy), As.Trim)
-              case _ => qClearOrders(dupBuys ++ dupSels, As.Trim)
+              case _ => qClearOrders(dupBuys ++ dupSels, As.KillDupes)
             }
 
           case _ => // not handled

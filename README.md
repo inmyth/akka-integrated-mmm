@@ -1,6 +1,13 @@
-# Integrated MMM Market Making Bot
+# MMM: Integrated Crypto Market Making Bot
 
 An automated grid/ping-pong market-making bot supporting various exchanges.
+
+In general, market making works by placing orders on both buy and sell sides. When an order is filled, the bot counters it by placing a new order on the opposing side. <br>
+The bot also maintains the number of order levels by seeding (placing new orders) or trimming (cancelling extra orders) as defined in config.
+
+As having multiple orders on the same price and quantity is undesirable the bot will also remove such duplicates starting from the newest one.
+
+One bot (defined in config's `bots`) should operate on one symbol (pair) only.
 
 [Supported exchanges and their handling](./EXCHANGES.md)
 
@@ -8,15 +15,6 @@ An automated grid/ping-pong market-making bot supporting various exchanges.
 
 [Version notes](./VERSIONS.md)
 
-## General
-
-One bot handles one symbol(pair).
-
-When starting empty: use `lastTicker`, `lastOwn`, or a value as seed starting price.
-
-When re-starting:
-- If config remains the same, use `cont` to continue from last session, all uncountered offers will be countered.
-- If config has changed, use other seed methods to clear all active orders and start anew. All uncountered offers won't be countered.
 
 ## Running
 Use [config-template](./config-template) as config reference.
@@ -74,15 +72,15 @@ Pair or symbol in format accepted by the exchange.
 #### seed
 
 Type: `string`<br>
-Enum: lastOwn, lastTicker, cont
+Enum: `lastTicker`, `cont`, or any valid number as starting price.
 
-Determines the seed (starting price) when the bot starts from shutdown state, with empty orderbook in the runtime.
+Seed determines how the bot starts.
 
-**lastOwn** : cancels any active orders, sets the starting price from the bot last traded order
+**lastTicker**, **any valid number**: cancels all active orders, seeds new orders from config. Any uncountered orders during the time the bot is not running will not be countered. <br>
+This method is used when starting fresh or when config was changed.
 
-**lastTicker**: cancels any active orders, sets the starting price from last market ticker
-
-**cont**: starts from currently active orders without seeding
+**cont**: continues from last session. Any uncountered orders during the time the bot is not running will be countered. <br>
+To correctly run this method, the bot should not be inactive longer than exchange's trade history retention. Some exchanges keep trade history for 2 days so if the bot is restarted later, it may not be able to retrieve all filled orders.
 
 #### gridSpace
 

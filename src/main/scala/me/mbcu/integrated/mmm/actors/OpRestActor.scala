@@ -23,7 +23,6 @@ object OpRestActor extends MyLogging {
         case a: CancelOrder => a
       }
       .isEmpty
-
 }
 
 class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) extends Actor with MyLogging {
@@ -72,9 +71,6 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
 
     case a : ErrorIgnore => base foreach(_ ! a)
 
-
-
   }
-
 
 }

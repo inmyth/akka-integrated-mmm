@@ -10,7 +10,7 @@ object AbsRestActor {
 
   object As extends Enumeration {
     type As = Value
-    val Seed, Trim, Counter, ClearOpenOrders, RoutineCheck, Init = Value
+    val Seed, Trim, Counter, ClearOpenOrders, KillDupes, RoutineCheck, Init = Value
   }
 
   trait SendRest{
