@@ -36,7 +36,9 @@ Both Trade History and Active Orders are fetched cyclically.
 
 This is the simplest and the best possible method for REST exchange as it doesn't require many calls to the server.
 
-For this method to work, an exchange must have Trade History method that returns one among other things the status (filled, active, etc)
+For this method to work, an exchange must have Trade History method that returns one among other things the status (filled, partially-filled, cancelled)
+
+All requests are pooled in a queue and popped by the rate allowed by the exchange.
 
 #### GetOrderInfo Method
 
@@ -50,7 +52,7 @@ If the status is filled the bot will counter it and remove the order from the me
 
 The bot also checks regularly if it needs to reseed or trim a side.
 
-All requests are pooled in a queue and popped by the rate allowed by the exchange. This method requires a lot of requests to be sent to server and may not work well if there are too many orders.
+This method requires a lot of requests to be sent to server and may not work well if there are too many orders.
 
 ### Websocket Exchanges
 

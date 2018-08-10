@@ -6,7 +6,7 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
     - return sorted without key.
     - Use order id (Long) as indicator
 
-### yobit (not recommended)
+### yobit
 - The HmacSHA512 signature has to be in lowercased hex
 - ~Trade returns order status.~ Trade returns order status which always indicates that the order is unfilled.
 - ActiveOrder returns only the current amount which might have been partially filled. To get complete info, we still need to call OrderInfo on each order
@@ -15,7 +15,6 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
     - return sorted with special key (Long)
     - Use this key as indicator
 - Trade History response doesn't have filled / partially filled status. To rebuild a fully filled order, need gather multiple fragmented trades.
-**This can cause fragmentation (one order fragmented into many smaller orders)**.
 
 ### fcoin
 - Timestamp is required to sign
