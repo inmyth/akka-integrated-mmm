@@ -18,6 +18,15 @@ object YobitActor {
 
   def parseForOrderId(js: JsValue): String = (js \ "return" \ "order_id").as[Long].toString
 
+  def parseForServerTs(js: JsValue): Long = (js \ "return" \ "server_time").as[Long]
+
+  def parseLastOwnTradePrice(js: JsValue): Option[BigDecimal] = {
+    (js \ "return").as[JsObject].fields.headOption match {
+      case Some(v) => (v._2 \ "rate").asOpt[BigDecimal]
+      case _ => None
+    }
+  }
+
 
   val activeToOffer: Tuple2[Long, JsValue] => Offer = (head: Tuple2[Long, JsValue]) => {
     val prc =
@@ -38,6 +47,7 @@ object YobitActor {
         case 0 => Status.active
         case 1 => Status.filled
         case 2 => Status.cancelled
+        case 3 => Status.filled
         case _ => Status.cancelled
       },
       (head._2 \ "timestamp_created").as[String].toLong * 1000L,
@@ -87,6 +97,9 @@ object YobitActor {
 
   def parseOrders(js: JsValue, t:Tuple2[Long, JsValue] => Offer): Seq[Offer] = parseReturn(js).map(c => (c._1.toLong, c._2)).map(t)
 
+
+
+
   def parseReturn(js: JsValue): Seq[(String, JsValue)] = (js \ "return").as[JsObject].fields
 
   def parseTicker(js: JsValue, symbol: String): Option[BigDecimal] = Some((js \ symbol \ "last").as[BigDecimal])
@@ -115,11 +128,13 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
       case a: NewOrder => tradeRequest(a, YobitRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => tradeRequest(a, YobitRequest.cancelOrder(a.bot.credentials, a.id))
+      case a: CancelOrder => tradeRequest(a, YobitRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
       case a: GetActiveOrders => tradeRequest(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
 
-      case a: GetFilledOrders => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
+      case a: GetOwnPastTrades => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
+
+      case a: GetOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
 
     }
 
@@ -136,11 +151,10 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
   def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
     info(logResponse(a, raw))
-
     val arriveMs = System.currentTimeMillis()
 
     a match {
-      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case p: NewOrder => op foreach (_ ! GotNewOrderId(s"prov-${System.currentTimeMillis()}", p.as, arriveMs, p))
       case _ =>
     }
 
@@ -150,7 +164,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
         val book = a.book
         a match {
 
-          case t: GetTickerStartPrice => book ! GotTickerStartPrice(YobitActor.parseTicker(js, a.bot.pair), arriveMs, t)
+          case t: GetTickerStartPrice =>  book ! GotStartPrice(YobitActor.parseTicker(js, a.bot.pair), arriveMs, t)
 
           case _ =>
             (js \ "success").as[Int] match {
@@ -161,10 +175,10 @@ class YobitActor() extends AbsRestActor() with MyLogging {
                   case m if m.contains("invalid sign") | m.contains("invalid key, sign, method or nonce") =>
                     errorShutdown(ShutdownCode.fatal, 0, s"$request $m")
                   case m if m.contains("The given order has already been cancelled.") =>
-                    book ! GotOrderCancelled(a.asInstanceOf[CancelOrder].id, a.as, arriveMs,a.asInstanceOf[CancelOrder])
+                    book ! GotOrderCancelled(a.as, arriveMs,a.asInstanceOf[CancelOrder])
                     errorIgnore(0, msg)
                   case m if m.contains("The given order has already been closed and cannot be cancelled.") =>
-                    book ! GotOrderCancelled(a.asInstanceOf[CancelOrder].id, a.as, arriveMs, a.asInstanceOf[CancelOrder])
+                    book ! GotOrderCancelled(a.as, arriveMs, a.asInstanceOf[CancelOrder])
                     errorIgnore(0, msg)
                   case m if m.contains("Insufficient funds in wallet of the first currency of the pair") => errorIgnore(0, msg)
                   case _ => errorIgnore(0, msg)
@@ -173,19 +187,23 @@ class YobitActor() extends AbsRestActor() with MyLogging {
               case 1 =>
                 a match {
 
-                  case t: GetFilledOrders =>
-                    val lastCounterId = t.lastCounterId.toLong
-                    val (uncountereds, latestCounterId) = if ((js \ "return").isDefined) YobitActor.parseFilled(js, lastCounterId) else (Seq.empty[Offer], None)
-                    book ! GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest = true, arriveMs, t)
+                  case t: GetOwnPastTrades => book ! GotStartPrice(YobitActor.parseLastOwnTradePrice(js), arriveMs, t)
 
-                  case t: GetActiveOrders =>
-                    val activeOrders = if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
+                  case t: GetActiveOrders =>  val activeOrders =
+                    if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
                     //{"success":1} // if there's no active order
-                    book ! GotActiveOrders(activeOrders, 1, nextPage = false, arriveMs, t)
+                    book ! GotActiveOrders(activeOrders, t.page, nextPage = false, arriveMs, t)
 
-                  case a: CancelOrder =>  // not handled
+                  case t: GetOrderInfo => book ! GotOrderInfo(YobitActor.parseOrders(js, YobitActor.activeToOffer).head, arriveMs, t )
+                  //{"success":0,"error":"A996DD2E"} // if order doesn't exist
 
-                  case a: NewOrder => // not handled
+                  case t: CancelOrder => book ! GotOrderCancelled(t.as, arriveMs, t)
+
+                  case t: NewOrder =>
+                    val id = YobitActor.parseForOrderId(js)
+                    val serverMs = YobitActor.parseForServerTs(js) * 1000
+                    t.book ! GotProvisionalOffer(id, serverMs, t.offer)
+                    op foreach(_ ! GotNewOrderId(YobitActor.parseForOrderId(js), t.as, arriveMs, t))
 
                   case _ => error(s"Unknown YobitActor#parse : $raw")
                 }

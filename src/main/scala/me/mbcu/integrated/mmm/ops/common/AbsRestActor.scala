@@ -28,21 +28,35 @@ object AbsRestActor {
 
   case class GetFilledOrders(lastCounterId: String, override val as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class CancelOrder(id: String, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
+  case class CancelOrder(offer: Offer, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
   case class NewOrder(offer: Offer, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
   case class GetTickerStartPrice(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-  case class GotNewOrder(override val arriveMs: Long, override val send: NewOrder) extends GotRest
+//  case class GetOrderbook(page: Int, override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
+
+  case class GetOrderInfo(id: String, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
+
+  case class GetOwnPastTrades(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
+
+  case class GotNewOrderId(id: String, as: As, override val arriveMs: Long, override val send: NewOrder)  extends GotRest
 
   case class GotTickerStartPrice(price: Option[BigDecimal], override val arriveMs: Long, override val send: GetTickerStartPrice) extends GotRest
 
-  case class GotOrderCancelled(id: String, as: As, override val arriveMs: Long, override val send: CancelOrder) extends GotRest
+  case class GotLastOwnStartPrice(price: Option[BigDecimal], override val arriveMs: Long, override val send: SendRest) extends GotRest
+
+  case class GotOrderInfo(offer: Offer, override val arriveMs: Long, override val send: GetOrderInfo) extends GotRest
+
+  case class GotOrderCancelled(as: As, override val arriveMs: Long, override val send: CancelOrder) extends GotRest
 
   case class GotActiveOrders(offers: Seq[Offer], currentPage: Int, nextPage: Boolean, override val arriveMs: Long, override val send: GetActiveOrders) extends GotRest
 
   case class GotUncounteredOrders(offers: Seq[Offer], latestCounterId: Option[String], isSortedFromOldest: Boolean = true, override val arriveMs: Long, override val send: GetFilledOrders) extends GotRest
+
+  case class GotStartPrice(price: Option[BigDecimal], override val arriveMs: Long, override val send: SendRest) extends GotRest
+
+  case class GotProvisionalOffer(id: String, provisionalTs: Long, offer: Offer) // this comes after NewOrder with id and provisionalTs (used to correctly remove duplicates)
 
   object StartRestActor
 

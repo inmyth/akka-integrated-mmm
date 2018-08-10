@@ -4,17 +4,17 @@ An automated grid/ping-pong market-making bot supporting various exchanges.
 
 In general, market making works by placing orders on both buy and sell sides. When an order is filled, the bot counters it by placing a new order on the opposing side. <br>
 The bot also maintains the number of order levels by seeding (placing new orders) or trimming (cancelling extra orders) as defined in config.
+In this bot only filled orders are countered. It doesn't counter partially-filled orders.
 
 As having multiple orders on the same price and quantity is undesirable the bot will also remove such duplicates starting from the newest one.
 
 One bot (defined in config's `bots`) should operate on one symbol (pair) only.
 
-[Supported exchanges and their handling](./EXCHANGES.md)
-
 [Operation](./OPERATION.md)
 
-[Version notes](./VERSIONS.md)
+[Exchanges Notes](./EXCHANGES.md)
 
+[Version notes](./VERSIONS.md)
 
 ## Running
 Use [config-template](./config-template) as config reference.
@@ -74,7 +74,7 @@ Pair or symbol in format accepted by the exchange.
 Type: `string`<br>
 Enum: `lastTicker`, `cont`, or any valid number as starting price.
 
-Seed determines how the bot starts.
+Seed determines how the bot starts. Refer to Supported Exchanges for allowed methods.
 
 **lastTicker**, **any valid number**: cancels all active orders, seeds new orders from config. Any uncountered orders during the time the bot is not running will not be countered. <br>
 This method is used when starting fresh or when config was changed.
@@ -151,6 +151,19 @@ Type: `string`<br>
 
 Strategy to be used. Refer to strategy section for valid names.
 
+## Supported Exchanges
+
+### okexRest
+
+allowed seed methods: `lastTicker`, `cont`, custom price
+
+### yobit
+
+allowed seed methods: `lastTicker`, `lastOwn`, `cont`, custom price
+
+### fcoin
+
+allowed seed methods: `lastTicker`, `cont`, custom price
 
 ## Strategies
 

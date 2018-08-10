@@ -1,19 +1,17 @@
 package me.mbcu.integrated.mmm.ops.okex
 
 import akka.actor.Props
-import me.mbcu.integrated.mmm.ops.Definitions.{Exchange, Protocol}
+import me.mbcu.integrated.mmm.ops.Definitions.{Exchange, Op}
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, Bot}
 
 object OkexRest extends AbsExchange {
 
   val name = Exchange.okexRest
-  val protocol = Protocol.rest
+  val protocol = Op.rest
   val endpoint = "https://www.okex.com/api/v1"
   override val intervalMillis: Int = 500
 
   override def getActorRefProps: Props = Props(new OkexRestActor())
-
-  override val seedIfEmpty: Boolean = true
 
   val OKEX_ERRORS = Map(
     1002 -> "The transaction amount exceed the balance",

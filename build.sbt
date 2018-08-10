@@ -6,6 +6,7 @@ scalaVersion := "2.12.6"
 
 lazy val akkaHttpVersion = "10.1.3"
 lazy val akkaVersion = "2.5.13"
+lazy val web3jVersion = "3.5.0"
 
 mainClass in assembly := Some("me.mbcu.integrated.mmm.Application")
 
@@ -38,3 +39,5 @@ libraryDependencies += "com.typesafe.play" %% "play-json-joda" % "2.6.9"
 libraryDependencies += "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.0.0-M1"
 libraryDependencies += "com.typesafe.play" %% "play-ws-standalone-json" % "2.0.0-M1"
 libraryDependencies += "javax.xml.crypto" % "jsr105-api" % "1.0.1"
+libraryDependencies += "org.web3j" % "core" % web3jVersion
+libraryDependencies += "org.web3j" % "utils" % web3jVersion

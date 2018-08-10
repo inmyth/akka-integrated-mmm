@@ -42,7 +42,7 @@ object Env {
 
 object StartMethods extends Enumeration {
   type StartMethods = Value
-  val lastTicker, cont = Value
+  val lastTicker, lastOwn, cont = Value
 }
 
 case class Bot(

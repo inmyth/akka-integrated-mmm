@@ -1,3 +1,11 @@
+0.6.0
+- brought back GI (GetOrderInfo) method: checking order status by calling GetOrderInfo
+- avoided waiting for GetOrderInfo by using provisional offer: offer whose values come from request and id from newOrder
+- fixed find duplicates: returns more than one if more than one dupe
+- seed starts only when theres' no NewOrder and CancelOrder
+- ProvisionalOffer is set with serverTs to allow duplicates removal
+- trims and remove duplicates requests are now merged
+
 0.5.4
 - added KillDupes enum
 - more readme
@@ -103,14 +111,3 @@ NOTE: even more secure way is not to pop the request from the queue but remove i
 0.0.1
 - Refactoring from Okex MMM
 - Supports okexRest
-
-TODO
-- [x] Long test on Yobit
-- Config `startOrderbookEmpty` renamed to `seed`. lastTicker, lastOwn, price ->
-    - [x] Rest methods should not return shutdown except for config error, creds error (except Okex)
-    - [] WS needs to reconnect WS
-- remove `isHardReset`.
-    - [] For Rest this is already handled by order check scheduler
-    - [] For WS, cache orders before they are sent and remove them once response is returned. WS reconnect will fire up send all orders from the cache.
-- [] ~~Config startOrderbookExists : keep, clear~~ resolve is default
-

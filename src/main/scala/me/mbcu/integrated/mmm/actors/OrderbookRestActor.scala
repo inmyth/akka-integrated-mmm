@@ -90,12 +90,12 @@ class OrderbookRestActor(bot: Bot, exchange: AbsExchange) extends Actor with MyL
 
     case "reseed" =>
       var growth = Seq.empty[Offer]
-      if (exchange.seedIfEmpty) {
-        if (sortedBuys.isEmpty) growth ++= grow(Side.buy)
-        if (sortedSels.isEmpty) growth ++= grow(Side.sell)
-      } else {
-        growth ++= grow(Side.buy) ++ grow(Side.sell)
-      }
+//      if (exchange.seedIfEmpty) {
+//        if (sortedBuys.isEmpty) growth ++= grow(Side.buy)
+//        if (sortedSels.isEmpty) growth ++= grow(Side.sell)
+//      } else {
+//        growth ++= grow(Side.buy) ++ grow(Side.sell)
+//      }
 //      sendOrders(growth, As.Seed)
 
     case "trim" =>

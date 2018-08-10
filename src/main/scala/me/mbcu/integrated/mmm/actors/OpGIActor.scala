@@ -1,24 +1,27 @@
 package me.mbcu.integrated.mmm.actors
 
-import akka.actor.{ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.dispatch.ExecutionContexts.global
+import me.mbcu.integrated.mmm.actors.OrderGIActor.{CheckSafeForGI, SafeForGI}
 import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
 import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
-import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOpActor, AbsOrder, Bot}
+import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOrder, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-object OpRestActor extends MyLogging {
-
+object OpGIActor {
+  def isSafeForGI(q: mutable.Queue[SendRest], nos: mutable.Set[NewOrder], bot: Bot): Boolean =
+    (q.filter(_.bot == bot) ++ nos.filter(_.bot == bot)).isEmpty
 
 }
 
-class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) extends AbsOpActor(exchangeDef, bots, fileActor) with MyLogging {
+class OpGIActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with MyLogging {
   private implicit val ec: ExecutionContextExecutor = global
   private var base: Option[ActorRef] = None
   private var rest: Option[ActorRef] = None
@@ -33,7 +36,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
       rest = Some(context.actorOf(exchangeDef.getActorRefProps))
       rest foreach (_ ! StartRestActor)
       bots.foreach(bot => {
-        val book = context.actorOf(Props(new OrderRestActor(bot, exchangeDef, fileActor)), name= s"${bot.pair}")
+        val book = context.actorOf(Props(new OrderGIActor(bot, exchangeDef)), name = s"${bot.pair}")
         book ! "start"
       })
       self ! "init dequeue scheduler"
@@ -47,23 +50,29 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
           case order: NewOrder => nos += order
           case _ =>
         }
-        rest foreach(_ ! next)
+        rest foreach (_ ! next)
       }
 
     case QueueRequest(seq) => q ++= seq
 
+    case a: CheckSafeForGI => a.ref ! SafeForGI(OpGIActor.isSafeForGI(q, nos, a.bot))
+
+    case a: CheckSafeForSeed => a.ref ! SafeForSeed(AbsOrder.isSafeForSeed(q, nos, a.bot))
+
+    case a: GetOrderInfo => q += a
+
     case a: GotNewOrderId => nos -= a.send
 
-    case CheckSafeForSeed(ref, bot) => ref ! SafeForSeed(AbsOrder.isSafeForSeed(q, nos, bot))
-
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
-      base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
+      base foreach (_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
       q += sendRequest
 
-    case a : ErrorShutdown => base foreach(_ ! a)
+    case a: ErrorShutdown => base foreach (_ ! a)
 
-    case a : ErrorIgnore => base foreach(_ ! a)
+    case a: ErrorIgnore => base foreach (_ ! a)
 
   }
 
+
 }
+

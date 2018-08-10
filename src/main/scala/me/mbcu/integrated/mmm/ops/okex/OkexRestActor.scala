@@ -78,7 +78,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
       case a: CancelOrder =>
         ws.url(s"$url/cancel_order.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restCancelOrder(a.bot.credentials, a.bot.pair, a.id)))
+          .post(stringifyXWWWForm(OkexRequest.restCancelOrder(a.bot.credentials, a.bot.pair, a.offer.id)))
           .map(response => parse(a, response.body[String]))
 
       case a: GetActiveOrders =>
@@ -106,7 +106,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
     val arriveMs = System.currentTimeMillis()
 
     a match {
-      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case p: NewOrder => op foreach (_ ! GotNewOrderId("unused", p.as, arriveMs, p))
       case _ =>
     }
 
@@ -137,7 +137,7 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
 
             case t: CancelOrder => // not handled
 
-            case t: NewOrder => // not handled
+            case t: NewOrder => // not handled, serverTime not available
 
             case _ => error(s"Unknown OkexRestActor#parseRest : $raw")
           }

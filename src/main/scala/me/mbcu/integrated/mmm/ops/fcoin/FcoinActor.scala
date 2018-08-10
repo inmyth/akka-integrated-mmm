@@ -96,7 +96,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
       case a: NewOrder => httpPost(a, FcoinRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, FcoinRequest.cancelOrder(a.bot.credentials, a.id))
+      case a: CancelOrder => httpPost(a, FcoinRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
     }
 
@@ -125,7 +125,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
     val arriveMs = System.currentTimeMillis()
 
     a match {
-      case order: NewOrder => op foreach (_ ! GotNewOrder(arriveMs, order))
+      case p: NewOrder => op foreach (_ ! GotNewOrderId("unused", p.as, arriveMs, p))
       case _ =>
     }
 
@@ -157,7 +157,7 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
 
             case a: CancelOrder =>  // not handled
 
-            case a: NewOrder => // not handled
+            case a: NewOrder => // not handled, serverTime not available
 
 
           }

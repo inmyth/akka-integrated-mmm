@@ -1,8 +1,9 @@
 package me.mbcu.integrated.mmm.actors
 
-import akka.actor.Actor
+import akka.actor.{Actor, ActorRef}
+import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOpActor, Bot}
 
-class OpWsActor extends Actor {
+class OpWsActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) extends AbsOpActor(exchangeDef, bots, fileActor) {
 
   override def receive: Receive = {
 

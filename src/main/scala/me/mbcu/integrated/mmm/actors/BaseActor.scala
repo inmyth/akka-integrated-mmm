@@ -59,8 +59,10 @@ class BaseActor(configPath: String, msPath: String) extends Actor with MyLogging
            Config.groupBots(c.bots).zipWithIndex.foreach {
             case (b, i) => val excDef = Definitions.exchangeMap(b._1)
               val props = excDef.protocol match {
-                  case Protocol.rest => Props(new OpRestActor(excDef, b._2, f))
-                  case Protocol.ws => Props(new OpWsActor())
+                  case Op.rest => Props(new OpRestActor(excDef, b._2, f))
+                  case Op.ddex => Props(new OpDdexActor(excDef, b._2, f))
+                  case Op.ws => Props(new OpWsActor(excDef, b._2, f))
+                  case Op.restgi => Props(new OpGIActor(excDef, b._2))
                 }
               val opActor = context.actorOf(props, botName.format(i))
               opActor ! "start"

@@ -61,8 +61,6 @@ object Offer {
 
   val sortTimeAsc: Seq[Offer] => Seq[Offer] = in => in.sortWith(_.createdAt < _.createdAt)
 
-
-
   def sortBuys(buys: Seq[Offer]): scala.collection.immutable.Seq[Offer] =
     collection.immutable.Seq(buys.sortWith(_.price > _.price): _*)
 
@@ -74,11 +72,6 @@ object Offer {
     (sortBuys(t._1), sortSels(t._2))
   }
 
-  // find duplicates: same price, same quantity, returns the newest (for cancelation)
-  def getDuplicates(offers: Seq[Offer]): Seq[Offer] =
-     offers.groupBy(_.price).collect { case (x,ys) if ys.lengthCompare(1) > 0 =>
-      ys.groupBy(_.quantity).collect { case (r,s) if s.lengthCompare(1) > 0 => s.sortWith(_.createdAt > _.createdAt)}
-    }.flatten.map(_.head).toSeq
 
 
   def dump(bot: Bot, sortedBuys: Seq[Offer], sortedSels: Seq[Offer]) : String = {
@@ -101,6 +94,7 @@ object Offer {
 
     builder.toString()
   }
+
 
 }
 
