@@ -183,7 +183,8 @@ Pay attention minimum quantity. Ideally minimum quantity should be smaller than 
 
 Code: `fullfixed`<br>
 
-The new unit price is spaced rigidly by gridSpace, e.g. if a buy order with price X is consumed then a new sell order selling the same quantity with price X + gridSpace will be created.<br>
+The new unit price is spaced rigidly by gridSpace, e.g. if a buy order with price X is consumed then a new sell order selling the same quantity with price X + gridSpace will be created.
+
 If a sell order with price Y is consumed then a buy order with the same quantity and price Y - gridSpace will be created.
 
 

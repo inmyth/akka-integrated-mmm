@@ -27,7 +27,7 @@ The bot basically fetches two pieces of information to operate:
 
 As the bot simply counters whatever orders that come out in Trade History the only problem is to mark the last offer the bot left out.<br>
 For this purpose the bot saves the last countered order on a text file, in the form of order id or timestamp. <br>
-The next time if fetches Trade History, it will start countering from this id. <br>
+The next time it fetches Trade History, it will start countering from this id. <br>
 If the boundary doesn't exist in the response, the bot will consider all orders there to be uncountered and counter them all<br>
 
 Active Order on the other hand are needed for seeding or trimming.
