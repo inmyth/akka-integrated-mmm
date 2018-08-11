@@ -1,3 +1,6 @@
+0.6.1
+- fixed Yobit status 3 from filled to partially-filled
+
 0.6.0
 - brought back GI (GetOrderInfo) method: checking order status by calling GetOrderInfo
 - avoided waiting for GetOrderInfo by using provisional offer: offer whose values come from request and id from newOrder

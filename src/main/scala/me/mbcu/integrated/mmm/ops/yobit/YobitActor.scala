@@ -47,7 +47,7 @@ object YobitActor {
         case 0 => Status.active
         case 1 => Status.filled
         case 2 => Status.cancelled
-        case 3 => Status.filled
+        case 3 => Status.partiallyFilled
         case _ => Status.cancelled
       },
       (head._2 \ "timestamp_created").as[String].toLong * 1000L,
@@ -96,8 +96,6 @@ object YobitActor {
   }
 
   def parseOrders(js: JsValue, t:Tuple2[Long, JsValue] => Offer): Seq[Offer] = parseReturn(js).map(c => (c._1.toLong, c._2)).map(t)
-
-
 
 
   def parseReturn(js: JsValue): Seq[(String, JsValue)] = (js \ "return").as[JsObject].fields
