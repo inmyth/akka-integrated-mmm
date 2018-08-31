@@ -26,7 +26,8 @@ object LivecoinActor {
       case LivecoinState.CANCELLED => Status.cancelled
       case LivecoinState.NOT_CANCELLED => Status.active
       case LivecoinState.PARTIALLY => Status.partiallyFilled // used in request
-      case LivecoinState.PARTIALLY_FILLED => Status.partiallyFilled
+      case LivecoinState.PARTIALLY_FILLED => Status.partiallyFilled  // used in request
+      case LivecoinState.PARTIALLY_FILLED_AND_CANCELLED => Status.partiallyFilled
       case LivecoinState.ALL => Status.active
       case _ => Status.cancelled
     }

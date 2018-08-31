@@ -12,7 +12,7 @@ object LivecoinRequest extends AbsRequest {
 
   object LivecoinState extends Enumeration {
     type LivecoinState = Value
-    val ALL, OPEN, CLOSED, CANCELLED, EXECUTED, NOT_CANCELLED, PARTIALLY, PARTIALLY_FILLED = Value
+    val ALL, OPEN, CLOSED, CANCELLED, EXECUTED, NOT_CANCELLED, PARTIALLY, PARTIALLY_FILLED, PARTIALLY_FILLED_AND_CANCELLED = Value
 
     implicit val read = Reads.enumNameReads(LivecoinState)
     implicit val write = Writes.enumNameWrites

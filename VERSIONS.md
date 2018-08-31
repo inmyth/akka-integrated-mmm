@@ -1,3 +1,6 @@
+0.7.1
+- added Livecoin status
+
 0.7.0
 - added Livecoin
 - Bitcalpha in progress
