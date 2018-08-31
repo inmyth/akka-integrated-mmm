@@ -23,25 +23,33 @@ object LivecoinRequest extends AbsRequest {
   def getTicker(pair: String): String = Livecoin.endpoint.format(s"exchange/ticker?currencyPair=${urlEncode(pair)}")
 
 
-  def getOrders(credentials: Credentials, pair: String, state: LivecoinState, after: Option[Long]): LivecoinParams =
-    getOrders(credentials.signature, pair, state, after)
+  def getOwnTrades(credentials: Credentials, pair: String, state: LivecoinState, after: Long): LivecoinParams =
+    getOwnTrades(credentials.signature, pair, state, after)
 
-  def getOrders(secret: String, pair: String, state: LivecoinState, after: Option[Long]): LivecoinParams = {
-    var params = after match {
-      case Some(l) => Map(
-        "currencyPair" -> pair,
-        "openClosed" -> state.toString,
-        "issuedFrom" -> l.toString
-      )
-      case _ => Map(
-        "currencyPair" -> pair,
-        "openClosed" -> state.toString
-      )
-    }
-    if (after.isDefined) params += ("issuedFrom" -> after.head.toString)
+  def getOwnTrades(secret: String, pair: String, state: LivecoinState, after: Long): LivecoinParams = {
+    var params = Map(
+      "currencyPair" -> pair,
+      "openClosed" -> state.toString,
+      "issuedFrom" -> after.toString
+    )
     val sorted = sortToForm(params)
     LivecoinParams(sign(sorted, secret), Livecoin.endpoint.format(s"exchange/client_orders?$sorted"),  sorted)
   }
+
+
+  def getActiveOrders(credentials: Credentials, pair: String, state: LivecoinState, startRow: Int): LivecoinParams =
+    getActiveOrders(credentials.signature, pair, state, startRow)
+
+  def getActiveOrders(secret: String, pair: String, state: LivecoinState, startRow: Int): LivecoinParams = {
+    var params = Map(
+      "currencyPair" -> pair,
+      "openClosed" -> state.toString,
+      "startRow" -> startRow.toString
+    )
+    val sorted = sortToForm(params)
+    LivecoinParams(sign(sorted, secret), Livecoin.endpoint.format(s"exchange/client_orders?$sorted"),  sorted)
+  }
+
 
   def newOrder(credentials: Credentials, pair: String, side: Side, price: BigDecimal, amount: BigDecimal): LivecoinParams = newOrder(credentials.signature, pair, side, price, amount)
 

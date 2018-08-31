@@ -1,3 +1,7 @@
+0.7.2
+- refactored Livecoin getOrder
+- removed Livecoin pagination (doesn't work)
+
 0.7.1
 - added Livecoin status
 

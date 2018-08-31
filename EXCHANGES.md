@@ -25,7 +25,8 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
 
 
 ### livecoin
-
+- get client orders's pagination is broken (startRow doesn't work)
+- expect all active order to be at most 100 at a time
 
 
 ### btcalpha

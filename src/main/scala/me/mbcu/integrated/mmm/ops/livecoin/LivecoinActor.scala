@@ -87,9 +87,9 @@ class LivecoinActor extends AbsRestActor with MyLogging{
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: GetActiveOrders => httpGet(a, LivecoinRequest.getOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, None))
+      case a: GetActiveOrders => httpGet(a, LivecoinRequest.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
 
-      case a: GetFilledOrders => httpGet(a, LivecoinRequest.getOrders(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, Some(a.lastCounterId.toLong)))
+      case a: GetFilledOrders => httpGet(a, LivecoinRequest.getOwnTrades(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, a.lastCounterId.toLong))
 
       case a: NewOrder => httpPost(a, LivecoinRequest.newOrder(a.bot.credentials, a.offer.symbol, a.offer.side, a.offer.price, a.offer.quantity))
 
@@ -149,7 +149,8 @@ class LivecoinActor extends AbsRestActor with MyLogging{
 
               case a: GetActiveOrders =>
                 val res = (js \ "data").as[List[JsValue]].map(LivecoinActor.toOffer)
-                a.book ! GotActiveOrders(res, a.page, if (res.size == 100) true else false, arriveMs, a)
+                val isNextPage = (js \ "totalRows").as[Int] > (js \ "endRow").as[Int] // broken
+                a.book ! GotActiveOrders(res, a.page, false , arriveMs, a)
 
             }
 
