@@ -24,3 +24,14 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
     - Use order id (String) as indicator
 
 
+### livecoin
+
+
+
+### btcalpha
+- doesn't have partially-filled status
+- orders need to be big and many
+
+
+
+

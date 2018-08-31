@@ -3,9 +3,8 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderRestActor._
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.Settings
-import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, SafeForSeed}
+import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common._
@@ -22,7 +21,6 @@ object OrderRestActor {
   case class GotLastCounter(bc: BotCache, as: As)
 
   case class WriteLastCounter(book: ActorRef, bot: Bot, m: BotCache)
-
 
   case class LogActives(arriveMs: Long, buys: Seq[Offer], sels: Seq[Offer])
 }
@@ -49,7 +47,7 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
       }
       else {
         val activeOrders = send.cache ++ offers
-        val (buys,sels) = Offer.splitToBuysSels(activeOrders)
+        val (sortedBuys,sortedSels) = Offer.splitToBuysSels(activeOrders)
         send.as match {
           case As.Init =>
             bot.seed match {
@@ -63,32 +61,31 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
                 qSeed(seed)
             }
           case As.RoutineCheck =>
-            val (dupBuys, dupSels) = (AbsOrder.getDuplicates(buys), AbsOrder.getDuplicates(sels))
-            (dupBuys.size, dupSels.size) match {
-              case (0,0) =>
-                qSeed(grow(buys, sels, Side.buy) ++ grow(buys, sels, Side.sell))
-                if(bot.isStrictLevels) qClearOrders(trim(buys, sels, Side.sell) ++ trim(buys, sels, Side.buy), As.Trim)
-              case _ => qClearOrders(dupBuys ++ dupSels, As.KillDupes)
-            }
+            val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
+            val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
+            val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
+            qClearOrders(cancels._1, As.Trim)
+            qClearOrders(cancels._2, As.KillDupes)
+
+            qSeed(grow(sortedBuys, sortedSels, Side.buy) ++ grow(sortedBuys, sortedSels, Side.sell))
 
           case _ => // not handled
         }
-        self ! LogActives(arriveMs, buys, sels)
+        self ! LogActives(arriveMs, sortedBuys, sortedSels)
       }
 
     case GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest, arriveMs, send) =>
-      fileActor ! WriteLastCounter(self, bot, BotCache(latestCounterId))
+      fileActor ! WriteLastCounter(self, bot, BotCache(latestCounterId.getOrElse(send.lastCounterId)))
+      scheduleGetFilled(Settings.getFilledSeconds)
       send.as match {
         case As.Init =>
           bot.seed match {
             case a if a.equals(StartMethods.cont.toString) =>
               qCounter(uncountereds)
-              scheduleGetFilled(Settings.getFilledSeconds)
             case _ => qActiveOrders(Seq.empty[Offer], System.currentTimeMillis(), page = 1, As.Init)
           }
         case As.RoutineCheck =>
           qCounter(uncountereds)
-          scheduleGetFilled(Settings.getFilledSeconds)
 
         case _ => // not handled
       }

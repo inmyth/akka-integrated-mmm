@@ -2,9 +2,8 @@ package me.mbcu.integrated.mmm.actors
 
 import akka.actor.{ActorRef, Cancellable, Props}
 import akka.dispatch.ExecutionContexts.global
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
-import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, SafeForSeed}
+import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOpActor, AbsOrder, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging
@@ -14,8 +13,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object OpRestActor extends MyLogging {
-
-
 }
 
 class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) extends AbsOpActor(exchangeDef, bots, fileActor) with MyLogging {
@@ -33,7 +30,7 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
       rest = Some(context.actorOf(exchangeDef.getActorRefProps))
       rest foreach (_ ! StartRestActor)
       bots.foreach(bot => {
-        val book = context.actorOf(Props(new OrderRestActor(bot, exchangeDef, fileActor)), name= s"${bot.pair}")
+        val book = context.actorOf(Props(new OrderRestActor(bot, exchangeDef, fileActor)), name= s"${Bot.filePath(bot)}")
         book ! "start"
       })
       self ! "init dequeue scheduler"

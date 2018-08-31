@@ -68,6 +68,8 @@ case class Bot(
 object Bot {
   val millisFileFormat = "%s_%s"
 
+  def filePath(bot: Bot):String = bot.pair.replaceAll("/", "_").toLowerCase()
+
   implicit val jsonFormat: OFormat[Bot] = Json.format[Bot]
 
   object Implicits {

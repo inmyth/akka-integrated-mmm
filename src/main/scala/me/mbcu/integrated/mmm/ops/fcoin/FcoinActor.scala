@@ -77,7 +77,6 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
   import play.api.libs.ws.DefaultBodyWritables._
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
-  override val url: String = Fcoin.endpoint
   private var ws = StandaloneAhcWSClient()
 
   override def start(): Unit = setOp(Some(sender()))

@@ -34,8 +34,6 @@ object AbsRestActor {
 
   case class GetTickerStartPrice(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
-//  case class GetOrderbook(page: Int, override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
-
   case class GetOrderInfo(id: String, as: As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
 
   case class GetOwnPastTrades(override val as:As)(implicit val bot:Bot, implicit val book:ActorRef) extends SendRest
@@ -71,8 +69,6 @@ abstract class AbsRestActor() extends Actor {
 
   def start()
 
-  def url: String
-
   def errorRetry(sendRequest: SendRest, code: Int, msg: String, shouldEmail: Boolean = true): Unit = op foreach (_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
 
   def errorShutdown(shutdownCode: ShutdownCode, code: Int, msg: String): Unit = op foreach (_ ! ErrorShutdown(shutdownCode, code, msg))
@@ -94,9 +90,9 @@ abstract class AbsRestActor() extends Actor {
     def bound(r: String, max: Int): String = if (raw.length > max) s"${r.substring(0, max)}..." + "..." else r
 
     val response = a match  {
-      case t: GetFilledOrders => bound(raw, max = 200)
+      case t: GetFilledOrders => bound(raw, max = 500)
 
-      case t: GetActiveOrders => bound(raw, max = 200)
+      case t: GetActiveOrders => bound(raw, max = 500)
 
       case _ => raw
     }

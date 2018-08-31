@@ -1,6 +1,8 @@
 package me.mbcu.integrated.mmm.ops.common
 
 import java.math.BigInteger
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 import javax.crypto.Mac
@@ -32,5 +34,11 @@ abstract class AbsRequest {
   }
 
   def signHmacSHA1(secret: String, data: String): Array[Byte] = signHmac(secret, data, "HmacSHA1")
+
+  def signHmacSHA256(secret: String, data: String): Array[Byte] = signHmac(secret, data, "HmacSHA256")
+
+  def sortToForm(params: Map[String, String]) :String = params.toSeq.sortBy(_._1).map(c => s"${c._1}=${urlEncode(c._2)}").mkString("&")
+
+  def urlEncode(in: String): String = URLEncoder.encode(in, StandardCharsets.UTF_8.name())
 
 }

@@ -33,7 +33,7 @@ object FileActor extends MyLogging {
   }
 
 
-  def millisFileName(msPath: String, bot: Bot): String = msPath + Bot.millisFileFormat.format(bot.exchange.toString, bot.pair)
+  def millisFileName(msPath: String, bot: Bot): String = msPath + Bot.millisFileFormat.format(bot.exchange.toString, Bot.filePath(bot))
 
   def readLastCounterId(path: String, bot: Bot): BotCache = {
     val fName = millisFileName(path, bot)

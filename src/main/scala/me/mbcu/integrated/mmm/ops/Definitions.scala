@@ -1,10 +1,12 @@
 package me.mbcu.integrated.mmm.ops
 
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
+import me.mbcu.integrated.mmm.ops.btcalpha.Btcalpha
 import me.mbcu.integrated.mmm.ops.common.AbsExchange
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.SendRest
 import me.mbcu.integrated.mmm.ops.ddex.Ddex
 import me.mbcu.integrated.mmm.ops.fcoin.Fcoin
+import me.mbcu.integrated.mmm.ops.livecoin.Livecoin
 import me.mbcu.integrated.mmm.ops.okex.OkexRest
 import me.mbcu.integrated.mmm.ops.yobit.Yobit
 import play.api.libs.json.{Reads, Writes}
@@ -17,7 +19,9 @@ object Definitions {
     Exchange.okexRest -> OkexRest,
     Exchange.yobit -> Yobit,
     Exchange.fcoin -> Fcoin,
-    Exchange.ddex -> Ddex
+    Exchange.ddex -> Ddex,
+    Exchange.livecoin -> Livecoin,
+    Exchange.btcalpha -> Btcalpha
   )
 
   object ShutdownCode extends Enumeration {
@@ -28,11 +32,10 @@ object Definitions {
 
   object Exchange extends Enumeration {
     type Exchange = Value
-    val okexRest, yobit, fcoin, ddex = Value
+    val okexRest, yobit, fcoin, ddex, livecoin, btcalpha = Value
 
     implicit val reads = Reads.enumNameReads(Exchange)
     implicit val writes = Writes.enumNameWrites
-
   }
 
   object Op extends Enumeration {
@@ -61,7 +64,5 @@ object Definitions {
     val intervalLogSeconds = 15
     val intervalSeedSeconds:Int = 5
   }
-
-
 
 }

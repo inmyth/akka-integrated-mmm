@@ -1,3 +1,7 @@
+0.7.0
+- added Livecoin
+- Bitcalpha in progress
+
 0.6.1
 - fixed Yobit status 3 from filled to partially-filled
 

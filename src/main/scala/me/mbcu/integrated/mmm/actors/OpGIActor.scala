@@ -3,9 +3,8 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderGIActor.{CheckSafeForGI, SafeForGI}
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor._
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, ErrorShutdown}
-import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, SafeForSeed}
+import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOrder, Bot}
 import me.mbcu.integrated.mmm.utils.MyLogging

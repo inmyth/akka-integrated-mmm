@@ -45,6 +45,9 @@ object AbsOrder {
 
   case class SafeForSeed(yes: Boolean)
 
+  case class QueueRequest(a: Seq[SendRest])
+
+
 }
 
 abstract class AbsOrder(bot: Bot) extends Actor  {

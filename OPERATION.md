@@ -134,5 +134,11 @@ To include a new exchange, these items need to be checked:
 - figure out how to sign a request
 - implement the necessary API
 
+### For `rest`
+- own past trades API must have filled, partially filled, closed status and have sortable field
+- the API command has sort parameter or is sorted naturally
+- sort parameter or sortable field (e.g updatedTime or tradeId) will be lastCounterId
+- if it has sort parameter, check inclusion/exclusion (ts=a returns data exclusively after a or not)
+
 
 

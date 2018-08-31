@@ -3,9 +3,8 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderGIActor.{CheckSafeForGI, SafeForGI}
-import me.mbcu.integrated.mmm.actors.OrderbookRestActor.QueueRequest
 import me.mbcu.integrated.mmm.ops.Definitions.Settings
-import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, SafeForSeed}
+import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
@@ -18,8 +17,6 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object OrderGIActor {
-
-  case class QueueRequest(a: Seq[SendRest])
 
   case class CheckSafeForGI(ref: ActorRef, bot: Bot)
 
@@ -120,7 +117,7 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
         case Status.active =>
           addSort(offer)
           val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
-          val trims = trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell)
+          val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
           val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
           cancelOrders(cancels._1, As.Trim)
           cancelOrders(cancels._2, As.KillDupes)
