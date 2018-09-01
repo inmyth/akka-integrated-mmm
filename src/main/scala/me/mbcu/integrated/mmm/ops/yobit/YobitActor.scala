@@ -187,8 +187,8 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
                   case t: GetOwnPastTrades => book ! GotStartPrice(YobitActor.parseLastOwnTradePrice(js), arriveMs, t)
 
-                  case t: GetActiveOrders =>  val activeOrders =
-                    if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
+                  case t: GetActiveOrders =>
+                    val activeOrders = if ((js \ "return").isDefined) YobitActor.parseOrders(js, YobitActor.activeToOffer) else Seq.empty[Offer]
                     //{"success":1} // if there's no active order
                     book ! GotActiveOrders(activeOrders, t.page, nextPage = false, arriveMs, t)
 
@@ -201,7 +201,7 @@ class YobitActor() extends AbsRestActor() with MyLogging {
                     val id = YobitActor.parseForOrderId(js)
                     val serverMs = YobitActor.parseForServerTs(js) * 1000
                     t.book ! GotProvisionalOffer(id, serverMs, t.offer)
-                    op foreach(_ ! GotNewOrderId(YobitActor.parseForOrderId(js), t.as, arriveMs, t))
+                    op foreach(_ ! GotNewOrderId(id, t.as, arriveMs, t))
 
                   case _ => error(s"Unknown YobitActor#parse : $raw")
                 }

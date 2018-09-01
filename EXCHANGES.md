@@ -28,10 +28,9 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
 - get client orders's pagination is broken (startRow doesn't work)
 - expect all active order to be at most 100 at a time
 
-
 ### btcalpha
 - doesn't have partially-filled status
-- orders need to be big and many
+- api secret has to be escaped and cannot contain single quotes
 
 
 

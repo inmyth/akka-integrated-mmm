@@ -1,3 +1,6 @@
+0.8.0
+- added bitcoinalpha
+
 0.7.2
 - refactored Livecoin getOrder
 - removed Livecoin pagination (doesn't work)

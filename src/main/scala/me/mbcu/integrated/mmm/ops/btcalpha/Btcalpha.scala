@@ -5,17 +5,16 @@ import me.mbcu.integrated.mmm.ops.Definitions.Exchange.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Op.Protocol
 import me.mbcu.integrated.mmm.ops.Definitions.{Exchange, Op}
 import me.mbcu.integrated.mmm.ops.common.AbsExchange
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinActor
 
 object Btcalpha extends AbsExchange {
 
-  override val name: Exchange = Exchange.livecoin
+  override val name: Exchange = Exchange.btcalpha
 
-  override val protocol: Protocol = Op.rest
+  override val protocol: Protocol = Op.restgi
 
-  override val endpoint: String = "https://btc-alpha.com/api/v1/%s"
+  override val endpoint: String = "https://btc-alpha.com/api/%s"
 
-  override def intervalMillis: Int = 600
+  override def intervalMillis: Int = 1000
 
   override def getActorRefProps: Props = Props(new BtcalphaActor())
 }

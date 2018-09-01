@@ -1,6 +1,6 @@
 name := "akka-integrated-mmm"
 
-version := "0.7.2"
+version := "0.8.0"
 
 scalaVersion := "2.12.6"
 
