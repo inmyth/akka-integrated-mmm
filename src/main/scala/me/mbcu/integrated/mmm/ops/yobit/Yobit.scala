@@ -12,11 +12,11 @@ object Yobit extends AbsExchange {
 
   override val protocol: Protocol = Op.restgi
 
-  override val endpoint: String = "https://yobit.net/api/3/%s/%s"
+  override val endpoint: String = "https://yobit.io/api/3/%s/%s"
 
-  override val intervalMillis: Int = 1200
+  override val intervalMillis: Int = 2000
 
-  val endpointTrade: String = "https://yobit.net/tapi/"
+  val endpointTrade: String = "https://yobit.io/tapi/"
 
   override def getActorRefProps: Props = Props(new YobitActor())
 

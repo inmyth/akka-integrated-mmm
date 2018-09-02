@@ -103,7 +103,7 @@ Example: Okex
 
 In REST it is possible to map request and response. In websocket it is not possible.
 That's why client uses response-challenge on a param like request id to match it with incoming response.
-Having one websocket for one bot(one symbol) can make things easier, since we can eliminate the possibilities of getting responses not related to that bot.
+~Having one websocket for one bot(one symbol) can make things easier, since we can eliminate the possibilities of getting responses not related to that bot.~ API quota !
 Although it is very likely such server isn't designed to handle HFT (since it just wraps REST) it is still worthwhile to do websocket method if only to save some latency from Http POST/GET.
 
 ## Duplicates

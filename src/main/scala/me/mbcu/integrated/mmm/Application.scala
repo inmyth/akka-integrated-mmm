@@ -6,9 +6,6 @@ import me.mbcu.integrated.mmm.actors.BaseActor
 import me.mbcu.integrated.mmm.utils.{MyLogging, MyLoggingSingle}
 
 object Application extends App with MyLogging {
-
-
-
   implicit val system: ActorSystem = akka.actor.ActorSystem("mmm")
   implicit val materializer: ActorMaterializer = akka.stream.ActorMaterializer()
 

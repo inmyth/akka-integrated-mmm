@@ -57,7 +57,8 @@ class BaseActor(configPath: String, msPath: String) extends Actor with MyLogging
       (config, fileActor) match {
         case (Some(c), Some(f)) =>
            Config.groupBots(c.bots).zipWithIndex.foreach {
-            case (b, i) => val excDef = Definitions.exchangeMap(b._1)
+            case (b, i) =>
+              val excDef = Definitions.exchangeMap(b._1)
               val props = excDef.protocol match {
                   case Op.rest => Props(new OpRestActor(excDef, b._2, f))
                   case Op.ddex => Props(new OpDdexActor(excDef, b._2, f))

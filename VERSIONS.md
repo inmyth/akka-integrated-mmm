@@ -1,3 +1,7 @@
+0.8.1
+- changed yobit endpoint to yobit.io
+- changed yobit rate to 1500ms
+
 0.8.0
 - added bitcoinalpha
 
