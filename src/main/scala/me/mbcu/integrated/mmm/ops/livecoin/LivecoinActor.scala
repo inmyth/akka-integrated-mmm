@@ -5,8 +5,8 @@ import akka.stream.ActorMaterializer
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Side, Status}
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.LivecoinState.LivecoinState
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.{LivecoinParams, LivecoinState}
+import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRestRequest$.LivecoinState.LivecoinState
+import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRestRequest$.{LivecoinParams, LivecoinState}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -83,17 +83,17 @@ class LivecoinActor extends AbsRestActor with MyLogging{
     r match {
 
       case a: GetTickerStartPrice =>
-        ws.url(LivecoinRequest.getTicker(a.bot.pair))
+        ws.url(LivecoinRestRequest$.getTicker(a.bot.pair))
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: GetActiveOrders => httpGet(a, LivecoinRequest.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
+      case a: GetActiveOrders => httpGet(a, LivecoinRestRequest$.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
 
-      case a: GetFilledOrders => httpGet(a, LivecoinRequest.getOwnTrades(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, a.lastCounterId.toLong))
+      case a: GetFilledOrders => httpGet(a, LivecoinRestRequest$.getOwnTrades(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, a.lastCounterId.toLong))
 
-      case a: NewOrder => httpPost(a, LivecoinRequest.newOrder(a.bot.credentials, a.offer.symbol, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, LivecoinRestRequest$.newOrder(a.bot.credentials, a.offer.symbol, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, LivecoinRequest.cancelOrder(a.bot.credentials, a.offer.symbol, a.offer.id))
+      case a: CancelOrder => httpPost(a, LivecoinRestRequest$.cancelOrder(a.bot.credentials, a.offer.symbol, a.offer.id))
     }
 
     def httpPost(a: SendRest, r: LivecoinParams): Unit = {
@@ -128,16 +128,20 @@ class LivecoinActor extends AbsRestActor with MyLogging{
     val x = Try(Json parse raw)
     x match {
       case Success(js) =>
-          val success = (js \ "success").asOpt[Boolean]
-          if (success.isDefined && !success.get) {
-            if (raw.contains("invalid signature")) errorIgnore(-1, "invalid signature")
-            else if (raw.contains("incorrect key")) errorShutdown(ShutdownCode.fatal, -1, "wrong API key: ${a.bot.pair}")
-            else if (raw.contains("Minimal amount is")) errorIgnore(-1, "minimal amount too low: ${a.bot.pair}")
-            else if (raw.contains("insufficient funds"))  errorIgnore(-1, s"insufficient funds: ${a.bot.pair}")
-            else errorIgnore(-1, raw)
+          val success = js \ "success"
+          if (success.isDefined) {
+            if (!success.as[Boolean]) {
+              if (raw.contains("invalid signature")) errorIgnore(-1, "invalid signature")
+              else if (raw contains "incorrect key" ) errorShutdown(ShutdownCode.fatal, -1, "wrong API key: ${a.bot.pair}")
+              else if (raw contains "Minimal amount is") errorIgnore(-1, "minimal amount too low: ${a.bot.pair}")
+              else if (raw contains "insufficient funds")  errorIgnore(-1, s"insufficient funds: ${a.bot.pair}")
+              else if (raw contains "Cannot get a connection, pool error Timeout waiting for idle object" ) errorRetry(a, 0, raw, shouldEmail = false)
+              else errorIgnore(-1, raw)
+            }
           }
           else {
             a match {
+
               case a: GetTickerStartPrice =>
                 val lastPrice = (js \ "last").as[BigDecimal]
                 a.book ! GotTickerStartPrice(Some(lastPrice), arriveMs, a)
@@ -149,8 +153,8 @@ class LivecoinActor extends AbsRestActor with MyLogging{
 
               case a: GetActiveOrders =>
                 val res = (js \ "data").as[List[JsValue]].map(LivecoinActor.toOffer)
-                val isNextPage = (js \ "totalRows").as[Int] > (js \ "endRow").as[Int] // broken
-                a.book ! GotActiveOrders(res, a.page, false , arriveMs, a)
+//                val isNextPage = (js \ "totalRows").as[Int] > (js \ "endRow").as[Int] // broken
+                a.book ! GotActiveOrders(res, a.page, nextPage = false , arriveMs, a)
 
             }
 
@@ -160,9 +164,5 @@ class LivecoinActor extends AbsRestActor with MyLogging{
     }
 
   }
-
-
-
-
 
 }

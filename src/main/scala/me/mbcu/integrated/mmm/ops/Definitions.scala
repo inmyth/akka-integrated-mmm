@@ -6,6 +6,7 @@ import me.mbcu.integrated.mmm.ops.common.AbsExchange
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.SendRest
 import me.mbcu.integrated.mmm.ops.ddex.Ddex
 import me.mbcu.integrated.mmm.ops.fcoin.Fcoin
+import me.mbcu.integrated.mmm.ops.hitbtc.Hitbtc
 import me.mbcu.integrated.mmm.ops.livecoin.Livecoin
 import me.mbcu.integrated.mmm.ops.okex.OkexRest
 import me.mbcu.integrated.mmm.ops.yobit.Yobit
@@ -21,7 +22,8 @@ object Definitions {
     Exchange.fcoin -> Fcoin,
     Exchange.ddex -> Ddex,
     Exchange.livecoin -> Livecoin,
-    Exchange.btcalpha -> Btcalpha
+    Exchange.btcalpha -> Btcalpha,
+    Exchange.hitbtc -> Hitbtc
   )
 
   object ShutdownCode extends Enumeration {
@@ -32,7 +34,7 @@ object Definitions {
 
   object Exchange extends Enumeration {
     type Exchange = Value
-    val okexRest, yobit, fcoin, ddex, livecoin, btcalpha = Value
+    val okexRest, yobit, fcoin, ddex, livecoin, btcalpha, hitbtc = Value
 
     implicit val reads = Reads.enumNameReads(Exchange)
     implicit val writes = Writes.enumNameWrites
@@ -63,6 +65,8 @@ object Definitions {
     val getFilledSeconds:Int = 5
     val intervalLogSeconds = 15
     val intervalSeedSeconds:Int = 5
+    val wsRetrySeconds:Int = 2
+    val wsInitSeconds:Int = 1
   }
 
 }

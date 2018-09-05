@@ -12,9 +12,8 @@ object Side extends Enumeration {
   implicit val read = Reads.enumNameReads(Side)
   implicit val write = Writes.enumNameWrites
 
-  def reverse(a: Side): Side = {
-    if (a == Side.buy) sell else buy
-  }
+  def reverse(a: Side): Side = if (a == Side.buy) sell else buy
+  def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
 }
 
 object Status extends Enumeration {
@@ -26,15 +25,11 @@ object Status extends Enumeration {
 }
 
 object Offer {
+  implicit val jsonFormat = Json.format[Offer]
   val sortTimeDesc: Seq[Offer] => Seq[Offer] = in => in.sortWith(_.createdAt > _.createdAt)
-
-  //  implicit val jsonFormat = Json.format[Offer]
   val sortTimeAsc: Seq[Offer] => Seq[Offer] = in => in.sortWith(_.createdAt < _.createdAt)
 
   def newOffer(symbol: String, side: Side, price: BigDecimal, quantity: BigDecimal): Offer = Offer("unused", symbol, side, Status.debug, -1L, None, quantity, price, None)
-
-  def apply(id: String, symbol: String, side: Side, status: Status, createdAt: Long, updatedAt: Option[Long], quantity: BigDecimal, price: BigDecimal, cumQuantity: Option[BigDecimal]): Offer =
-    new Offer(id, symbol, side, status, createdAt, updatedAt, quantity, price, cumQuantity)
 
   def splitToBuysSels(in: Seq[Offer]): (Seq[Offer], Seq[Offer]) = {
     val t = in.partition(_.side == Side.buy)
@@ -96,42 +91,14 @@ object Offer {
 
 }
 
-
-class Offer(
-             val id: String,
-             val symbol: String,
-             val side: Side,
-             val status: Status,
-             val createdAt: Long,
-             val updatedAt: Option[Long],
-             val quantity: BigDecimal,
-             val price: BigDecimal,
-             val cumQuantity: Option[BigDecimal]
-           ) {
-
-  override def equals(that: Any): Boolean =
-    that match {
-      case that: Offer => that.canEqual(this) && this.hashCode == that.hashCode
-      case _ => false
-    }
-
-  def canEqual(a: Any): Boolean = a.isInstanceOf[Offer]
-
-  override def hashCode: Int = {
-    val prime = 31
-    val result = 17
-    prime * result + (if (id == null) 0 else id.hashCode)
-  }
-
-  def copy(
-            id: String = id,
-            symbol: String = symbol,
-            side: Side = side,
-            status: Status = status,
-            createdAt: Long = createdAt,
-            updatedAt: Option[Long] = updatedAt,
-            quantity: BigDecimal = quantity,
-            price: BigDecimal = price,
-            cumQuantity: Option[BigDecimal] = cumQuantity
-          ): Offer = Offer(id, symbol, side, status, createdAt, updatedAt, quantity, price, cumQuantity)
-}
+case class Offer(
+  id: String,
+  symbol: String,
+  side: Side,
+  status: Status,
+  createdAt: Long,
+  updatedAt: Option[Long],
+  quantity: BigDecimal,
+  price: BigDecimal,
+  cumQuantity: Option[BigDecimal]
+)

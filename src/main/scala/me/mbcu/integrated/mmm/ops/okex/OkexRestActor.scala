@@ -72,30 +72,30 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
       case a: NewOrder =>
         ws.url(s"$url/trade.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restNewOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity)))
+          .post(stringifyXWWWForm(OkexRestRequest$.restNewOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity)))
           .map(response => parse(a, response.body[String]))
 
       case a: CancelOrder =>
         ws.url(s"$url/cancel_order.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restCancelOrder(a.bot.credentials, a.bot.pair, a.offer.id)))
+          .post(stringifyXWWWForm(OkexRestRequest$.restCancelOrder(a.bot.credentials, a.bot.pair, a.offer.id)))
           .map(response => parse(a, response.body[String]))
 
       case a: GetActiveOrders =>
         ws.url(s"$url/order_history.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.unfilled, a.page)))
+          .post(stringifyXWWWForm(OkexRestRequest$.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.unfilled, a.page)))
           .map(response => parse(a, response.body[String]))
 
       case a: GetFilledOrders =>
         ws.url(s"$url/order_history.do")
           .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1)))
+          .post(stringifyXWWWForm(OkexRestRequest$.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1)))
           .map(response => parse(a, response.body[String]))
 
       case a: GetTickerStartPrice =>
           ws.url(s"$url/ticker.do")
-            .addQueryStringParameters(OkexRequest.restTicker(a.bot.pair).toSeq: _*)
+            .addQueryStringParameters(OkexRestRequest$.restTicker(a.bot.pair).toSeq: _*)
             .get()
             .map(response => parse(a, response.body[String]))
     }

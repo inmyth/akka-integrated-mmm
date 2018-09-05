@@ -1,19 +1,19 @@
 package me.mbcu.integrated.mmm.ops.btcalpha
 
-import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.BtcalphaStatus.BtcalphaStatus
+import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest$.BtcalphaStatus.BtcalphaStatus
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRequest, Credentials}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials}
 import play.api.libs.json._
 
-object BtcalphaRequest extends AbsRequest {
+object BtcalphaRestRequest$ extends AbsRestRequest {
 
   def getNonce: String = System.currentTimeMillis().toString
 
   object BtcalphaStatus extends Enumeration {
     type BtcalphaStatus = Value
-    val active: BtcalphaRequest.BtcalphaStatus.Value = Value(1)
-    val cancelled: BtcalphaRequest.BtcalphaStatus.Value = Value(2)
-    val done: BtcalphaRequest.BtcalphaStatus.Value = Value(3)
+    val active: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(1)
+    val cancelled: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(2)
+    val done: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(3)
 
     implicit val enumFormat: Format[BtcalphaStatus] = new Format[BtcalphaStatus] {
       override def reads(json: JsValue): JsResult[BtcalphaStatus] = json.validate[Int].map(BtcalphaStatus(_))

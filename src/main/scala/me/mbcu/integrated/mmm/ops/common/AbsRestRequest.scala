@@ -8,7 +8,7 @@ import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-abstract class AbsRequest {
+abstract class AbsRestRequest {
 
   private val md5: MessageDigest = MessageDigest.getInstance("MD5")
 

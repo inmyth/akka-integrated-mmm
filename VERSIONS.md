@@ -1,3 +1,7 @@
+0.8.2
+- Livecoin added errorRetry "Cannot get a connection"
+- first version of untested integrated HitBtc
+
 0.8.1
 - changed yobit endpoint to yobit.io
 - changed yobit rate to 1500ms

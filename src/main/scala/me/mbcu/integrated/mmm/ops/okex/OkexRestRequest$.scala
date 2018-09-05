@@ -1,7 +1,7 @@
 package me.mbcu.integrated.mmm.ops.okex
 
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRequest, Credentials, Offer}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials, Offer}
 import me.mbcu.integrated.mmm.ops.okex.OkexChannels.OkexChannels
 import me.mbcu.integrated.mmm.ops.okex.OkexEvents.OkexEvents
 import me.mbcu.integrated.mmm.ops.okex.OkexStatus.OkexStatus
@@ -29,42 +29,42 @@ object OkexChannels extends Enumeration {
   def withNameOpt(s: String): Option[Value] = values.find(_.toString == s)
 }
 
-object OkexRequest extends AbsRequest{
+object OkexRestRequest$ extends AbsRestRequest{
 
-  implicit val jsonFormat = Json.format[OkexRequest]
+  implicit val jsonFormat = Json.format[OkexRestRequest$]
 
   object Implicits {
-    implicit val writes = new Writes[OkexRequest] {
-      def writes(r: OkexRequest): JsValue = Json.obj(
+    implicit val writes = new Writes[OkexRestRequest$] {
+      def writes(r: OkexRestRequest$): JsValue = Json.obj(
         "event" -> r.event,
         "channel" -> r.channel,
         "parameters" -> r.parameters
       )
     }
 
-    implicit val reads: Reads[OkexRequest] = (
+    implicit val reads: Reads[OkexRestRequest$] = (
       (JsPath \ "event").read[OkexEvents] and
         (JsPath \ "channel").readNullable[OkexChannels] and
         (JsPath \ "parameters").readNullable[OkexParameters]
-      ) (OkexRequest.apply _)
+      ) (OkexRestRequest$.apply _)
 
   }
 
-  def login(apiKey : String, secret : String) : OkexRequest = {
+  def login(apiKey : String, secret : String) : OkexRestRequest$ = {
     val params = OkexParameters(None, apiKey, None, None, None, None, None)
     val signed = sign(secret, params)
     val p =  OkexParameters(Some(signed), apiKey, None, None, None, None, None)
-    OkexRequest(OkexEvents.login, None, Some(p))
+    OkexRestRequest$(OkexEvents.login, None, Some(p))
   }
 
-  def newOrder(credentials: Credentials, offer: Offer): OkexRequest = newOrder(credentials.pKey, credentials.signature, offer.symbol, offer.side, offer.quantity, offer.price)
+  def newOrder(credentials: Credentials, offer: Offer): OkexRestRequest$ = newOrder(credentials.pKey, credentials.signature, offer.symbol, offer.side, offer.quantity, offer.price)
 
 
-  def newOrder(apiKey : String, secret : String, symbol : String, `type` : Side, amount : BigDecimal, price : BigDecimal): OkexRequest = {
+  def newOrder(apiKey : String, secret : String, symbol : String, `type` : Side, amount : BigDecimal, price : BigDecimal): OkexRestRequest$ = {
     val params = OkexParameters(None, apiKey, Some(symbol), None, Some(`type`), Some(price), Some(amount))
     val signed = sign(secret, params)
     val p =  OkexParameters(Some(signed), apiKey, Some(symbol), None, Some(`type`), Some(price), Some(amount))
-    OkexRequest(OkexEvents.addChannel, Some(OkexChannels.ok_spot_order), Some(p))
+    OkexRestRequest$(OkexEvents.addChannel, Some(OkexChannels.ok_spot_order), Some(p))
   }
 
   def restCancelOrder(credentials: Credentials, symbol: String, orderId : String) : Map[String, String] =
@@ -77,14 +77,14 @@ object OkexRequest extends AbsRequest{
     Json.toJson(p).as[JsObject].value.map(r => r._1 -> r._2.toString().replace("\"", "")).toMap
   }
 
-  def cancelOrder(apiKey: String, secret : String, symbol : String, orderId : String) : OkexRequest = {
+  def cancelOrder(apiKey: String, secret : String, symbol : String, orderId : String) : OkexRestRequest$ = {
     val p = min3(apiKey, secret, symbol, orderId)
-    OkexRequest(OkexEvents.addChannel, Some(OkexChannels.ok_spot_cancel_order), Some(p))
+    OkexRestRequest$(OkexEvents.addChannel, Some(OkexChannels.ok_spot_cancel_order), Some(p))
   }
 
-  def infoOrder(apiKey : String, secret : String, symbol : String, orderId : String) : OkexRequest = {
+  def infoOrder(apiKey : String, secret : String, symbol : String, orderId : String) : OkexRestRequest$ = {
     val p = min3(apiKey, secret, symbol, orderId)
-    OkexRequest(OkexEvents.addChannel, Some(OkexChannels.ok_spot_orderinfo), Some(p))
+    OkexRestRequest$(OkexEvents.addChannel, Some(OkexChannels.ok_spot_orderinfo), Some(p))
   }
 
   def restNewOrder(credentials: Credentials, symbol: String, `type`: Side, price: BigDecimal, amount: BigDecimal) : Map[String, String] =
@@ -120,7 +120,7 @@ object OkexRequest extends AbsRequest{
 
   def restTicker(symbol: String) : Map[String, String] = Map("symbol" -> symbol)
 
-  def ping() : OkexRequest = OkexRequest(OkexEvents.ping, None, None)
+  def ping() : OkexRestRequest$ = OkexRestRequest$(OkexEvents.ping, None, None)
 
 
   private def min3(apiKey: String, secret: String, symbol: String, orderId: String ) : OkexParameters = {
@@ -137,4 +137,4 @@ object OkexRequest extends AbsRequest{
   }
 }
 
-case class OkexRequest (event : OkexEvents, channel : Option[OkexChannels], parameters : Option[OkexParameters])
+case class OkexRestRequest$(event : OkexEvents, channel : Option[OkexChannels], parameters : Option[OkexParameters])

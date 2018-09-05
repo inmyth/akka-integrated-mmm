@@ -3,7 +3,7 @@ package me.mbcu.integrated.mmm.ops.fcoin
 import java.util.Base64
 
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRequest, Credentials}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials}
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinMethod.FcoinMethod
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinState.FcoinState
 import play.api.libs.json.{Json, Reads, Writes}
@@ -21,7 +21,7 @@ object FcoinMethod extends Enumeration {
   val POST, GET = Value
 }
 
-object FcoinRequest extends AbsRequest {
+object FcoinRestRequest$ extends AbsRestRequest {
 
   case class FcoinParams(sign: String, params: String, ts: Long, url: String = "", js: String)
 

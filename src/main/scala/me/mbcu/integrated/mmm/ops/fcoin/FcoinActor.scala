@@ -6,7 +6,7 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
-import me.mbcu.integrated.mmm.ops.fcoin.FcoinRequest.FcoinParams
+import me.mbcu.integrated.mmm.ops.fcoin.FcoinRestRequest$.FcoinParams
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinState.FcoinState
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsLookupResult, JsValue, Json}
@@ -89,13 +89,13 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
             .get()
             .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: GetActiveOrders => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
+      case a: GetActiveOrders => httpGet(a, FcoinRestRequest$.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
 
-      case a: GetFilledOrders => httpGet(a, FcoinRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
+      case a: GetFilledOrders => httpGet(a, FcoinRestRequest$.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
 
-      case a: NewOrder => httpPost(a, FcoinRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, FcoinRestRequest$.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, FcoinRequest.cancelOrder(a.bot.credentials, a.offer.id))
+      case a: CancelOrder => httpPost(a, FcoinRestRequest$.cancelOrder(a.bot.credentials, a.offer.id))
 
     }
 

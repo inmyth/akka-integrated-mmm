@@ -3,8 +3,8 @@ package me.mbcu.integrated.mmm.ops.btcalpha
 import akka.dispatch.ExecutionContexts.global
 import akka.stream.ActorMaterializer
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
-import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.BtcalphaStatus.BtcalphaStatus
-import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.{BtcalphaParams, BtcalphaStatus}
+import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest$.BtcalphaStatus.BtcalphaStatus
+import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest$.{BtcalphaParams, BtcalphaStatus}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
@@ -70,15 +70,15 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: NewOrder => httpPost(a, BtcalphaRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, BtcalphaRestRequest$.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, BtcalphaRequest.cancelOrder(a.bot.credentials, a.offer.id))
+      case a: CancelOrder => httpPost(a, BtcalphaRestRequest$.cancelOrder(a.bot.credentials, a.offer.id))
 
-      case a: GetActiveOrders => httpGet(a, BtcalphaRequest.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.active))
+      case a: GetActiveOrders => httpGet(a, BtcalphaRestRequest$.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.active))
 
-      case a: GetOwnPastTrades => httpGet(a, BtcalphaRequest.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.done))
+      case a: GetOwnPastTrades => httpGet(a, BtcalphaRestRequest$.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.done))
 
-      case a: GetOrderInfo => httpGet(a, BtcalphaRequest.getOrderInfo(a.bot.credentials, a.id))
+      case a: GetOrderInfo => httpGet(a, BtcalphaRestRequest$.getOrderInfo(a.bot.credentials, a.id))
 
     }
 

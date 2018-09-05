@@ -1,6 +1,6 @@
 package me.mbcu.integrated.mmm.ops.common
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import me.mbcu.integrated.mmm.ops.Definitions.Exchange.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Op.Protocol
 
@@ -16,4 +16,10 @@ abstract class AbsExchange {
   def getActorRefProps: Props
 
 
+}
+
+trait AbsWsExchange {
+   def getParser(op: ActorRef): AbsWsParser
+
+   def getRequest: AbsWsRequest
 }
