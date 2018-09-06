@@ -12,7 +12,7 @@ import scala.collection.mutable.ListBuffer
 class HitbtcRequestTest extends FunSuite{
 
   test("cancel order") {
-    val js = HitbtcRequest.cancelOrder("aaa")
+    val js = HitbtcRequest.cancelOrder("aaa").jsValue
     val res = Json.parse(js.toString())
     assert((res \ "params" \ "clientOrderId").as[String] === "aaa")
     assert((res \ "id").as[String] === "cancelOrder.aaa")

@@ -37,24 +37,4 @@ class OfferTest extends FunSuite {
     assert(q.head.price < q(1).price)
   }
 
-
-  test("equality test") {
-    val o1 = Offer("a", "eth_noah", Side.buy, Status.debug, 1532579178L, None, BigDecimal("1000"), BigDecimal("0.00000031"), None)
-    val o2 = Offer("a", "eth_noah", Side.sell, Status.active, 1532579278L, None, BigDecimal("1000"), BigDecimal("0.00000032"), None)
-    val o3 = Offer("b", "eth_noah", Side.buy, Status.active, 1532579378L, None, BigDecimal("1000"), BigDecimal("0.00000033"), None)
-
-    assert(o1 === o2)
-    assert(o1 !== o3)
-
-    var set = scala.collection.mutable.Set[Offer]()
-    set += o1
-    set += o2
-    set += o3
-    assert(set.size === 2)
-    assert(set.head.id === "b")
-  }
-
-
-
-
 }
