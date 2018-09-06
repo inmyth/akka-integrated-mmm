@@ -1,19 +1,21 @@
 package me.mbcu.integrated.mmm.ops.btcalpha
 
-import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest$.BtcalphaStatus.BtcalphaStatus
+import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest.BtcalphaStatus.BtcalphaStatus
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Bot, Credentials}
 import play.api.libs.json._
 
-object BtcalphaRestRequest$ extends AbsRestRequest {
+object BtcalphaRestRequest extends AbsRestRequest {
 
   def getNonce: String = System.currentTimeMillis().toString
 
+//  def toPairParam(pair: String): String = pair.replaceAll("/", "_").toUpperCase // from NOAH/BTC to NOAH_BTC
+
   object BtcalphaStatus extends Enumeration {
     type BtcalphaStatus = Value
-    val active: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(1)
-    val cancelled: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(2)
-    val done: BtcalphaRestRequest$.BtcalphaStatus.Value = Value(3)
+    val active: BtcalphaRestRequest.BtcalphaStatus.Value = Value(1)
+    val cancelled: BtcalphaRestRequest.BtcalphaStatus.Value = Value(2)
+    val done: BtcalphaRestRequest.BtcalphaStatus.Value = Value(3)
 
     implicit val enumFormat: Format[BtcalphaStatus] = new Format[BtcalphaStatus] {
       override def reads(json: JsValue): JsResult[BtcalphaStatus] = json.validate[Int].map(BtcalphaStatus(_))
@@ -22,6 +24,8 @@ object BtcalphaRestRequest$ extends AbsRestRequest {
   }
 
   case class BtcalphaParams(sign: String, nonce: String, url: String = "", params: String)
+
+  def getTickers(pair: String): String = Btcalpha.endpoint.format(s"charts/$pair/1/chart/?format=json&limit=1")
 
   def getOrders(credentials: Credentials, pair: String, status: BtcalphaStatus): BtcalphaParams = getOrders(credentials.pKey, credentials.signature, pair, status)
 
@@ -59,7 +63,7 @@ object BtcalphaRestRequest$ extends AbsRestRequest {
     BtcalphaParams(signed, getNonce, Btcalpha.endpoint.format("v1/order-cancel/"), params)
   }
 
-  def getOrderInfo(credentials: Credentials, id: String) : BtcalphaParams = cancelOrder(credentials.pKey, credentials.signature, id)
+  def getOrderInfo(credentials: Credentials, id: String) : BtcalphaParams = getOrderInfo(credentials.pKey, credentials.signature, id)
 
   def getOrderInfo(key: String, secret: String, id: String) : BtcalphaParams = {
     val signed = sign(key, secret)

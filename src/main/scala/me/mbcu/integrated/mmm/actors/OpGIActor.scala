@@ -35,7 +35,7 @@ class OpGIActor(exchangeDef: AbsExchange, bots: Seq[Bot]) extends Actor with MyL
       rest = Some(context.actorOf(exchangeDef.getActorRefProps))
       rest foreach (_ ! StartRestActor)
       bots.foreach(bot => {
-        val book = context.actorOf(Props(new OrderGIActor(bot, exchangeDef)), name = s"${bot.pair}")
+        val book = context.actorOf(Props(new OrderGIActor(bot, exchangeDef)), name = s"${Bot.filePath(bot)}")
         book ! "start"
       })
       self ! "init dequeue scheduler"

@@ -34,6 +34,7 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
 
 ### btcalpha
 - restGI: supports `lastTicker`, `lastOwn`,  and custom start price
+- **replace official pair name with underscore** (NOAH/BTC to NOAH_BTC)
 - doesn't have partially-filled status
 - api secret has to be escaped and cannot contain single quotes
 

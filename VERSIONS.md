@@ -1,3 +1,7 @@
+0.8.3
+- fixed BTcalpha pair name and request
+
+
 0.8.2
 - Livecoin added errorRetry "Cannot get a connection"
 - first version of untested integrated HitBtc
