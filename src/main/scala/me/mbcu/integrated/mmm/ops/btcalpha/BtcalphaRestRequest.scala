@@ -9,8 +9,6 @@ object BtcalphaRestRequest extends AbsRestRequest {
 
   def getNonce: String = System.currentTimeMillis().toString
 
-//  def toPairParam(pair: String): String = pair.replaceAll("/", "_").toUpperCase // from NOAH/BTC to NOAH_BTC
-
   object BtcalphaStatus extends Enumeration {
     type BtcalphaStatus = Value
     val active: BtcalphaRestRequest.BtcalphaStatus.Value = Value(1)

@@ -74,10 +74,7 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
 
       case a: CancelOrder => httpPost(a, BtcalphaRestRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
-      case a: GetActiveOrders =>
-        val r = BtcalphaRestRequest.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.active)
-        info (r.toString)
-        httpGet(a, r)
+      case a: GetActiveOrders => httpGet(a, BtcalphaRestRequest.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.active))
 
       case a: GetOwnPastTrades => httpGet(a, BtcalphaRestRequest.getOrders(a.bot.credentials, a.bot.pair, BtcalphaStatus.done))
 
