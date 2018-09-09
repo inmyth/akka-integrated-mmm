@@ -21,6 +21,8 @@ object BtcalphaRestRequest extends AbsRestRequest {
     }
   }
 
+  def sanitizeSecret(s: String): String =  StringContext treatEscapes s
+
   case class BtcalphaParams(sign: String, nonce: String, url: String = "", params: String)
 
   def getTickers(pair: String): String = Btcalpha.endpoint.format(s"charts/$pair/1/chart/?format=json&limit=1")
@@ -33,8 +35,8 @@ object BtcalphaRestRequest extends AbsRestRequest {
       "status" -> status.id.toString
     )
     val sorted = sortToForm(params)
-    val a = BtcalphaParams(sign(key, secret), getNonce, Btcalpha.endpoint.format(s"v1/orders/own/?$sorted"), sorted)
-    a
+    BtcalphaParams(sign(key, secret), getNonce, Btcalpha.endpoint.format(s"v1/orders/own/?$sorted"), sorted)
+
   }
 
   def newOrder(credentials: Credentials, pair: String, side: Side, price: BigDecimal, amount: BigDecimal) : BtcalphaParams =
@@ -71,6 +73,6 @@ object BtcalphaRestRequest extends AbsRestRequest {
 
   def arrangePost(key: String, sorted: String): String = s"$key$sorted"
 
-  def sign(payload: String, secret: String): String = toHex(signHmacSHA256(secret, payload), isCapital = false)
+  def sign(payload: String, secret: String): String = toHex(signHmacSHA256(sanitizeSecret(secret), payload), isCapital = false)
 
 }

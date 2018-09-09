@@ -46,6 +46,8 @@ class BaseActor(configPath: String, msPath: String) extends Actor with MyLogging
 
       case Some(c) =>
         config = Some(c)
+
+
         ses = Some(context.actorOf(Props(new SesActor(c.env.sesKey, c.env.sesSecret, c.env.emails)), name = "ses"))
         ses foreach (_ ! "start")
         self ! "init bot"

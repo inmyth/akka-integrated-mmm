@@ -1,6 +1,5 @@
 package me.mbcu.integrated.mmm.ops.common
 
-import me.mbcu.integrated.mmm.ops.Definitions.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Exchange.Exchange
 import me.mbcu.integrated.mmm.ops.Definitions.Strategies.Strategies
 import play.api.libs.functional.syntax._

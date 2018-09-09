@@ -1,3 +1,6 @@
+1.0.1
+- escaped secret for Btcalpha
+
 1.0.0
 - added Hitbtc
 - automatic websocket reconnect and cache drain

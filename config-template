@@ -7,13 +7,13 @@
      },
      "bots" : [
           {
-              "exchange" : "yobit",
+              "exchange" : "hitbtc",
               "credentials" : {
                   "pKey" : "apikeyWithTradeAllowed",
-                  "nonce" : "",
+                  "nonce" : "abcdef",
                   "signature": "secret"
               },
-              "pair": "noah_btc",
+              "pair": "NOAHBTC",
               "seed" : "lastTicker",
               "gridSpace": "0.5",
               "buyGridLevels":3,
@@ -22,7 +22,7 @@
               "sellOrderQuantity": "3000",
               "quantityPower" : 2,
               "counterScale" : 0,
-              "baseScale" : 8,
+              "baseScale" : 9,
               "isStrictLevels" : true,
               "isNoQtyCutoff" : true,
               "strategy" : "ppt"

@@ -17,4 +17,6 @@ object Btcalpha extends AbsExchange {
   override def intervalMillis: Int = 1000
 
   override def getActorRefProps: Props = Props(new BtcalphaActor())
+
+
 }

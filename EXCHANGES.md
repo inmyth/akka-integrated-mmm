@@ -40,6 +40,9 @@ As such 10007, 10005 and html response will be retried.
 - restGI: supports `lastTicker`, `lastOwn`,  and custom start price
 - **All IP 35.* (Google Cloud) are blocked by BtcAlpha**
 - **replace official pair name with underscore** (NOAH/BTC to NOAH_BTC)
+- api secret has to be escaped
+    - single-quotes: escaped with //'
+    - double-quotes: escaped with ///"
 - doesn't have partially-filled status
-- api secret has to be escaped and cannot contain single quotes
+
 
