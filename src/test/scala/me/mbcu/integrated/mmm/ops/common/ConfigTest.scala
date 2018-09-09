@@ -204,20 +204,5 @@ class ConfigTest extends FunSuite {
     assert(res(Exchange.okexRest).size === 2)
     assert(res(Exchange.yobit).size === 1)
   }
-
-  test("credential test") {
-    val d = ">FRS}s%x7UZBREN0'\"bu$^,NZKM%7;Wz1C~]DBYH]*g?(qmR)\"e34WCJAp*F4E4V"
-
-    val a =
-      """
-        |      {
-        |        "pKey": "c144efa2-07ce-4381-94e8-adc2ff5a0454",
-        |        "nonce": "",
-        |        "signature": ">FRS}s%x7UZBREN0'\"bu$^,NZKM%7;Wz1C~]DBYH]*g?(qmR)\"e34WCJAp*F4E4V"
-        |      }
-      """.stripMargin
-    val res = Json.parse(a).as[Credentials]
-    assert(res.signature === d)
-  }
-
+  
 }
