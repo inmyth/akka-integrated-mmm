@@ -204,5 +204,5 @@ class ConfigTest extends FunSuite {
     assert(res(Exchange.okexRest).size === 2)
     assert(res(Exchange.yobit).size === 1)
   }
-  
+
 }

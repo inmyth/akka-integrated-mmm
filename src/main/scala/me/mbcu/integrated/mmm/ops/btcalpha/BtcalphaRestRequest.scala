@@ -3,9 +3,10 @@ package me.mbcu.integrated.mmm.ops.btcalpha
 import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest.BtcalphaStatus.BtcalphaStatus
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Bot, Credentials}
+import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json._
 
-object BtcalphaRestRequest extends AbsRestRequest {
+object BtcalphaRestRequest extends AbsRestRequest with MyLogging {
 
   def getNonce: String = System.currentTimeMillis().toString
 
@@ -21,7 +22,11 @@ object BtcalphaRestRequest extends AbsRestRequest {
     }
   }
 
-  def sanitizeSecret(s: String): String =  StringContext treatEscapes s
+  def sanitizeSecret(s: String): String =  {
+    val res = StringContext treatEscapes s
+    info(res)
+    res
+  }
 
   case class BtcalphaParams(sign: String, nonce: String, url: String = "", params: String)
 
