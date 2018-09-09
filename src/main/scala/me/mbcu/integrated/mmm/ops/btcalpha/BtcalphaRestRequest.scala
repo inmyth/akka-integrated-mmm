@@ -33,7 +33,8 @@ object BtcalphaRestRequest extends AbsRestRequest {
       "status" -> status.id.toString
     )
     val sorted = sortToForm(params)
-    BtcalphaParams(sign(key, secret), getNonce, Btcalpha.endpoint.format(s"v1/orders/own/?$sorted"), sorted)
+    val a = BtcalphaParams(sign(key, secret), getNonce, Btcalpha.endpoint.format(s"v1/orders/own/?$sorted"), sorted)
+    a
   }
 
   def newOrder(credentials: Credentials, pair: String, side: Side, price: BigDecimal, amount: BigDecimal) : BtcalphaParams =

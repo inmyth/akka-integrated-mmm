@@ -3,7 +3,9 @@ package me.mbcu.integrated.mmm.ops.common
 import akka.actor.ActorRef
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode.ShutdownCode
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorShutdown}
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsWsParser.SendWs
+import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.JsValue
 
@@ -11,9 +13,9 @@ trait AbsWsRequest {
 
   def subscribe: SendWs
 
-  def cancelOrder(orderId: String): SendWs
+  def cancelOrder(orderId: String, as: As): SendWs
 
-  def newOrder(offer: Offer): SendWs
+  def newOrder(offer: Offer, as: As): SendWs
 
   def login(credentials: Credentials): SendWs
 
@@ -31,15 +33,15 @@ object AbsWsParser {
   }
 
 
-  case class SendWs(requestId: String, jsValue: JsValue)
+  case class SendWs(requestId: String, jsValue: JsValue, as: As)
   
-  case class RemoveOfferWs(override val requestId: String) extends GotWs
+  case class RemoveOfferWs(isRetry: Boolean, orderId: String, side: Side,  override val requestId: String) extends GotWs
 
   case class GotActiveOrdersWs(offers: Seq[Offer], override val requestId: String) extends GotWs
 
   case class GotOfferWs(offer: Offer, override val requestId: String) extends GotWs
 
-  case class GotStartPriceWs(price: Option[BigDecimal], override val requestId: String) extends GotWs
+  case class GotTickerPriceWs(price: Option[BigDecimal], override val requestId: String) extends GotWs
 
   case class RemovePendingWs(override val requestId: String) extends GotWs
 

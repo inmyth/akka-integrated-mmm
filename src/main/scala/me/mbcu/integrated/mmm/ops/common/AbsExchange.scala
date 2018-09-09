@@ -22,4 +22,6 @@ trait AbsWsExchange {
    def getParser(op: ActorRef): AbsWsParser
 
    def getRequest: AbsWsRequest
+
+   def orderId(offer: Offer): String
 }

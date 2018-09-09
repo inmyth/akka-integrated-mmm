@@ -79,8 +79,7 @@ object Strategy {
 
   def counter(qty0 : BigDecimal, unitPrice0 : BigDecimal, amtPwr : Int, ctrScale : Int, basScale : Int, symbol : String, gridSpace : BigDecimal, side : Side,
               oldAct : PingPong, strategy : Strategies, isNoQtyCutoff : Boolean,
-              maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None)
-  : Offer = {
+              maxPrice : Option[BigDecimal] = None, minPrice : Option[BigDecimal] = None): Offer = {
     val newSide = Side.reverse(side)
     val newAct  = PingPong.reverse(oldAct)
     seed(qty0, unitPrice0, amtPwr, ctrScale, basScale, symbol, 1, gridSpace, newSide, newAct, isPulledFromOtherSide = false, strategy, isNoQtyCutoff, maxPrice, minPrice).head

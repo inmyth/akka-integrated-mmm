@@ -10,9 +10,13 @@ As having multiple orders on the same price and quantity is undesirable the bot 
 
 One bot (defined in config's `bots`) should operate on one symbol (pair) only.
 
-[Operation](./OPERATION.md)
+Supported exchanges: HitBTC, Okex, Yobit, Livecoin, Btcalpha
 
-[Exchanges Notes](./EXCHANGES.md)
+
+
+[Exchanges](./EXCHANGES.md)
+
+[Operation](./OPERATION.md)
 
 [Version notes](./VERSIONS.md)
 
@@ -55,13 +59,13 @@ Api Key
 
 Type: `string`<br>
 
-Nonce. Set empty string if it's not needed.
+Nonce (used for Hitbtc). Set empty string if it's not needed.
 
 **signature**
 
 Type: `string`<br>
 
-Secret key or signature of secret key signed with nonce.
+Secret key or signed nonce (Hitbtc).
 
 #### pair
 
@@ -151,19 +155,6 @@ Type: `string`<br>
 
 Strategy to be used. Refer to strategy section for valid names.
 
-## Supported Exchanges
-
-### okexRest
-
-allowed seed methods: `lastTicker`, `cont`, custom price
-
-### yobit
-
-allowed seed methods: `lastTicker`, `lastOwn`, `cont`, custom price
-
-### fcoin
-
-allowed seed methods: `lastTicker`, `cont`, custom price
 
 ## Strategies
 

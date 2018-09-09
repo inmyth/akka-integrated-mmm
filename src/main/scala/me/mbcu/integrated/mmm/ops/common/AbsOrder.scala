@@ -118,7 +118,6 @@ abstract class AbsOrder(bot: Bot) extends Actor  {
     orders.slice(limit, orders.size)
   }
 
-
   def getRuntimeSeedStart(sortedBuys: Seq[Offer], sortedSels: Seq[Offer], side: Side): (Int, BigDecimal, BigDecimal, Boolean) = {
     var isPulledFromOtherSide: Boolean = false
     var levels: Int = 0

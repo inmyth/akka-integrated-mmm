@@ -28,6 +28,8 @@ object Hitbtc extends AbsExchange with AbsWsExchange {
 
   override val getRequest: AbsWsRequest = HitbtcRequest
 
+  override def orderId(offer: Offer): String = HitbtcRequest.orderId(offer)
+
 //  override def subscribe: SendWs = HitbtcRequest.subscribe
 
 

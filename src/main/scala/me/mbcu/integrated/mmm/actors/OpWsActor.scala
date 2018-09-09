@@ -46,9 +46,7 @@ class OpWsActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) e
 
     case WsGotText(text) => parser.parse(text, botMap)
 
-    case a: LoggedIn =>
-      info("logged in")
-      send(wsEx.getRequest.subscribe)
+    case a: LoggedIn => send(wsEx.getRequest.subscribe)
 
     case a: GotSubscribe => botMap.values.foreach(_ ! a)
 
@@ -61,8 +59,10 @@ class OpWsActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) e
   }
 
   def send(s: SendWs): Unit = {
-    info(s.requestId)
+    info(s"${s.as} : ${s.jsValue.toString}")
     client foreach(_ ! SendJs(s.jsValue))
   }
+
+
 
 }

@@ -1,6 +1,9 @@
-0.8.3
-- fixed BTcalpha pair name and request
+1.0.0
+- added Hitbtc
+- automatic websocket reconnect and cache drain
 
+0.8.3
+- fixed Btcalpha pair name and request
 
 0.8.2
 - Livecoin added errorRetry "Cannot get a connection"

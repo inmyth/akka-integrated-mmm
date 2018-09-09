@@ -72,13 +72,8 @@ It is similar to GetOrderInfo method except that the bot doesn't need to send ge
 
 As such the bot can act very fast to counter a filled order.
 
-
-#### TODO
 Websocket may get disconnected. To handle such scenario, the bot caches all outbound orders. Successful request will remove the corresponding order from the cache.
-There are two routes to stream orders to websocket client.
-- In normal operation, orderbook will send a request to cache and to ws client.
-- Once websocket is connected, fire up one time loop to send all cached orders to ws client
-- Since only successful response can remove the cached request,  the operation can resume normally
+If websocket is down, re-send all cached requests.
 
 ### DEX (Distributed Exchange)
 
@@ -139,6 +134,7 @@ To include a new exchange, these items need to be checked:
 - the API command has sort parameter or is sorted naturally
 - sort parameter or sortable field (e.g updatedTime or tradeId) will be lastCounterId
 - if it has sort parameter, check inclusion/exclusion (ts=a returns data exclusively after a or not)
+- if these requirements are not met use `restgi`: check all orders one-by-one with GetOrderInfo API
 
 
 

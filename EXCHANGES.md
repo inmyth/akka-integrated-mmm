@@ -1,7 +1,12 @@
+(the first item in each exchange is the supported seed method)
+
+### hitbtc
+- ws: supports `lastTicker` and custom start price
+
 ### okexRest
 - rest: supports `lastTicker`, `lastOwn`, `cont` and custom start price
-- Okex returns errors reserved for sign error (10007, 10005) even a Cloudlare website for non-sign error.
-As such 10007, 10005 and html response will be retried. *Make sure API key and secret are correct.*
+- *Make sure API key and secret are correct.* Okex returns errors reserved for sign error (10007, 10005) even a Cloudlare website for non-sign error.
+As such 10007, 10005 and html response will be retried.
 - no mention of API limit
 - TradeHistory
     - return sorted without key.
@@ -26,7 +31,6 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
     - return sorted without key.
     - Use order id (String) as indicator
 
-
 ### livecoin
 - rest: supports `lastTicker`, `lastOwn`, `cont` and custom start price
 - get client orders's pagination is broken (startRow doesn't work)
@@ -34,12 +38,8 @@ As such 10007, 10005 and html response will be retried. *Make sure API key and s
 
 ### btcalpha
 - restGI: supports `lastTicker`, `lastOwn`,  and custom start price
+- **All IP 35.* (Google Cloud) are blocked by BtcAlpha**
 - **replace official pair name with underscore** (NOAH/BTC to NOAH_BTC)
 - doesn't have partially-filled status
 - api secret has to be escaped and cannot contain single quotes
-
-### hitbtc
-- ws: supports `lastTicker` and custom start price
-
-
 

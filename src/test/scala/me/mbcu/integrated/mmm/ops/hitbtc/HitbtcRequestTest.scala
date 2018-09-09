@@ -1,38 +1,41 @@
 package me.mbcu.integrated.mmm.ops.hitbtc
 
-import java.util.Date
-
-import me.mbcu.integrated.mmm.ops.common.Side
-import org.joda.time.{DateTime, DateTimeZone}
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As
+import me.mbcu.integrated.mmm.ops.common.{Offer, Side}
 import org.scalatest.FunSuite
 import play.api.libs.json.Json
-
-import scala.collection.mutable.ListBuffer
 
 class HitbtcRequestTest extends FunSuite{
 
   test("cancel order") {
-    val js = HitbtcRequest.cancelOrder("aaa").jsValue
+    val js = HitbtcRequest.cancelOrder("aaa", As.Trim).jsValue
     val res = Json.parse(js.toString())
     assert((res \ "params" \ "clientOrderId").as[String] === "aaa")
     assert((res \ "id").as[String] === "cancelOrder.aaa")
   }
 
   test("clientOrderId length") {
+
     val pair1 = "PREMINEPREMINE"
-    val res1=  HitbtcRequest.clientOrderId(pair1, Side.sell)
+
+    val o1 = Offer.newOffer(pair1, Side.sell, BigDecimal(100), BigDecimal(100))
+    val res1=  HitbtcRequest.orderId(o1)
     assert(res1.length === 32)
 
     val pair2 = "NOAHETH"
-    val res2=  HitbtcRequest.clientOrderId(pair2, Side.sell)
+    val o2 = Offer.newOffer(pair2, Side.sell, BigDecimal(100), BigDecimal(100))
+
+    val res2=  HitbtcRequest.orderId(o2)
     assert(res2.length === 32)
   }
 
   test ("clientOrderId from id") {
     val pair = "NOAHETH"
     val method = "newOrder"
-    val clientOrderId =  HitbtcRequest.clientOrderId(pair, Side.sell)
-    val id = HitbtcRequest.requestId(pair, method, clientOrderId)
+    val o = Offer.newOffer(pair, Side.sell, BigDecimal(100), BigDecimal(100))
+
+    val clientOrderId =  HitbtcRequest.orderId(o)
+    val id = HitbtcRequest.requestId(clientOrderId, method)
     val res = HitbtcRequest.clientOrderIdFrom(id)
     assert(res === clientOrderId)
   }

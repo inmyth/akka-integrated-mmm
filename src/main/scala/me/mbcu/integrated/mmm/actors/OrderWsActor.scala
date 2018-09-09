@@ -19,6 +19,7 @@ import scala.language.postfixOps
 
 class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends AbsOrder(bot) with MyLogging{
   private implicit val ec: ExecutionContextExecutor = global
+  private val wsEx: AbsWsExchange = exchange.asInstanceOf[AbsWsExchange]
   var sels: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
   var buys: TrieMap[String, Offer] = TrieMap.empty[String, Offer]
   var sortedSels: scala.collection.immutable.Seq[Offer] = scala.collection.immutable.Seq.empty[Offer]
@@ -44,29 +45,41 @@ class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends A
     case GotSubscribe(requestId) => queue(pendings.values.toSeq)
 
     case GotActiveOrdersWs(offers, requestId) =>
-      resetAll()
-      addSort(offers)
 
       if (isStartingPrice) {
-        isStartingPrice = false
+        addSort(offers)
+
         bot.seed match {
           case a if a.equals(StartMethods.lastTicker.toString) =>
             cancelOrders((buys ++ sels).values.toSeq, As.ClearOpenOrders)
-            queue1(req.subsTicker(bot.pair))
+            unlockInitSeed()
 
-          case a if a.equals(StartMethods.cont.toString) =>
+          case a if a.equals(StartMethods.cont.toString) => isStartingPrice = false
 
           case a if a.equals(StartMethods.lastOwn.toString) => op.foreach(_ ! ErrorShutdown(ShutdownCode.fatal, -1, "lastOwn is not supported"))
 
           case _ =>
             cancelOrders((buys ++ sels).values.toSeq, As.ClearOpenOrders)
-            val customStartPrice = Some(BigDecimal(bot.seed))
-            seedFromStartPrice(customStartPrice)
+            unlockInitSeed()
 
         }
+      } else { // after ws gets reconnected
+        val m = offers.map(p => p.id -> p).toMap
+        val gones = (buys ++ sels).collect{case p @ (_: String, _: Offer) if !m.contains(p._1) => p._2}.toSeq
+        prepareSend(gones.map(counter), As.Counter)
+
+        resetAll()
+        addSort(offers)
+
+        val selGrows = grow(sortedBuys, sortedSels, Side.sell)
+        val buyGrows = grow(sortedBuys, sortedSels, Side.buy)
+        prepareSend(selGrows ++ buyGrows, As.Seed)
+        trim()
       }
 
-    case GotStartPriceWs(price, requestId) => seedFromStartPrice(price)
+    case GotTickerPriceWs(price, requestId) =>
+      queue1(req.unsubsTicker(bot.pair))
+      seedFromStartPrice(price)
 
     case GotOfferWs(offer, requestId) =>
 
@@ -74,63 +87,96 @@ class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends A
 
         case Status.filled =>
           removeSort(offer)
-
-          val ctr = counter(offer)
-          addSort(ctr)
-          sendOrder(ctr, As.Counter)
-
-          val growth = grow(sortedBuys, sortedSels, offer.side)
-          addSort(growth)
-          sendOrders(growth, As.Seed)
+          prepareSend(counter(offer), As.Counter)
+          prepareSend(grow(offer), As.Seed)
 
         case Status.partiallyFilled => addSort(offer)
 
         case Status.active =>
           addSort(offer)
-          val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
-          val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
-          val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
-          cancelOrders(cancels._1, As.Trim)
-          cancelOrders(cancels._2, As.KillDupes)
+          trim()
 
-        case Status.cancelled => removeSort(offer)
-
-        case Status.expired => removeSort(offer)
+        case Status.cancelled =>
+          removeSort(offer)
+          if (isStartingPrice) {
+            unlockInitSeed()
+          } else {
+            prepareSend(grow(offer), As.Seed)
+          }
 
         case _ => info(s"OrderWsActor#GotOfferWs unhandled status ${offer.status} ${offer.id}")
 
     }
 
-    case RemovePendingWs(requestId) => pendings -= requestId
+    case RemoveOfferWs(isRetry, orderId, side, requestId) =>
+      if (isRetry){
+        val retry = (buyTrans ++ selTrans)(orderId)
+        val pending = pendings(requestId)
+        prepareSend(retry, pending.as)
+      }
+      removeSort(side, orderId)
+      removePending(requestId)
+
+    case RemovePendingWs(requestId) => removePending(requestId)
 
     case RetryPendingWs(id) => queue1(pendings(id))
 
   }
 
+  def unlockInitSeed(): Unit = {
+    if (buys.isEmpty && sels.isEmpty) {
+      isStartingPrice = false
+      bot.seed match {
+        case a if a.equals(StartMethods.lastTicker.toString) => queue1(req.subsTicker(bot.pair))
+
+        case a if a.equals(StartMethods.cont.toString) =>
+
+        case a if a.equals(StartMethods.lastOwn.toString) => // unsupported
+
+        case _ =>
+          val customStartPrice = Some(BigDecimal(bot.seed))
+          seedFromStartPrice(customStartPrice)
+      }
+    }
+  }
+
+  def grow(offer: Offer): Seq[Offer] = grow(sortedBuys, sortedSels, offer.side)
+
+  def removePending(requestId: String): Unit = pendings -= requestId
+
   def seedFromStartPrice(price: Option[BigDecimal]): Unit = price match {
       case Some(p) =>
         info(s"Got initial price ${bot.exchange} ${bot.pair} : $price, starting operation")
         val seed = initialSeed(sortedBuys, sortedSels, p)
-        sendOrders(seed, As.Seed)
+        prepareSend(seed, As.Seed)
       case _ => error(s"Orderbook#GotStartPrice : Starting price for ${bot.exchange} / ${bot.pair} not found. Try different startPrice in bot")
     }
 
+  def trim(): Unit = {
+    val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
+    val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
+    val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
+    cancelOrders(cancels._1, As.Trim)
+    cancelOrders(cancels._2, As.KillDupes)
+  }
 
   def cancelOrders(o: Seq[Offer], as: As): Unit = {
-    val cancels = o.map(p => req.cancelOrder(p.id))
-    cancels.foreach(p => info(s"Cancelling ${bot.pair}: $p"))
+    val cancels = o.map(p => req.cancelOrder(p.id, as))
     queue(cancels)
   }
 
-  def sendOrder(o: Offer, as: As): Unit = sendOrders(Seq(o), as)
+  def prepareSend(o: Offer, as: As): Unit = prepareSend(Seq(o), as)
 
-  def sendOrders(o: Seq[Offer], as: As): Unit = {
-    val newOrders = o.map(p => req.newOrder(p))
-    newOrders.foreach(p => info(s"Sending new offer ${bot.pair}: $p"))
+  def prepareSend(o: Seq[Offer], as: As): Unit = {
+    val withId = o.map(withOrderId)
+    addSort(withId)
+
+    val newOrders = withId.map(p => req.newOrder(p, as))
     queue(newOrders)
   }
 
   def queue1(sendWs: SendWs): Unit = queue(Seq(sendWs))
+
 
   def queue(sendWs: Seq[SendWs]): Unit = {
     pendings ++= sendWs.map(p => p.requestId -> p)
@@ -144,6 +190,10 @@ class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends A
     sortedSels = scala.collection.immutable.Seq.empty[Offer]
   }
 
+  def withOrderId(offer: Offer):Offer = offer.copy(id = wsEx.orderId(offer))
+
+  def withOrderId(offers: Seq[Offer]): Seq[Offer] = offers.map(withOrderId)
+
   def addSort(offer: Offer): Unit = addSort(Seq(offer))
 
   def addSort(offers: Seq[Offer]): Unit = {
@@ -154,9 +204,11 @@ class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends A
     sort(Side.sell)
   }
 
-  def removeSort(offer: Offer): Unit = {
-    remove(offer.side, offer.id)
-    sort(offer.side)
+  def removeSort(offer: Offer): Unit = removeSort(offer.side, offer.id)
+
+  def removeSort(side: Side, id: String): Unit = {
+    remove(side, id)
+    sort(side)
   }
 
   def remove(side: Side, clientOrderId: String): Unit = {

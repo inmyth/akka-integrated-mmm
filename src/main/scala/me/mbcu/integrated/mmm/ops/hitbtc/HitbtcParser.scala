@@ -65,14 +65,16 @@ class HitbtcParser(op: ActorRef) extends AbsWsParser(op){
       case Success(js) =>
           if ((js \ "error").isDefined){
             val error = (js \ "error").as[RPCError]
-            val id = (js \ "id").as[String]
-            val book = botMap(HitbtcRequest.pairFromId(id))
+            val requestId = (js \ "id").as[String]
+            val book = botMap(HitbtcRequest.pairFromId(requestId))
             error.code match {
-              case 2011 | 10001 | 20001 | 20002 => book ! RemoveOfferWs(id)
-              case 20008 | 20004 => book ! RemoveOfferWs(id) // duplicate clientOrderId
+              case 2011 | 10001 | 20001 | 20002 => book ! RemoveOfferWs(isRetry = false, HitbtcRequest.clientOrderIdFrom(requestId), HitbtcRequest.sideFromId(requestId), requestId)
+              case 20008 | 20004 =>
+                val isRetry = if(requestId.contains("newOrder")) true else false
+                book ! RemoveOfferWs(isRetry, HitbtcRequest.clientOrderIdFrom(requestId), HitbtcRequest.sideFromId(requestId), requestId) // duplicate clientOrderId
               case 2001 | 2002 => errorShutdown(ShutdownCode.fatal, error.code, error.message.getOrElse("Currency / symbol not found"))
               case 1001 | 1002 | 1003 | 1004 | 403 => errorShutdown(ShutdownCode.fatal, error.code, error.message.getOrElse("Authentication failed"))
-              case 429 | 500 | 503 | 504 => book ! RetryPendingWs(id)
+              case 429 | 500 | 503 | 504 => book ! RetryPendingWs(requestId)
               case _ => // ErrorNonAffecting(error, id)
             }
             /*
@@ -94,7 +96,8 @@ class HitbtcParser(op: ActorRef) extends AbsWsParser(op){
             20005 	400 	Payout not found
             20006 	400 	Payout already committed
             20007 	400 	Payout already rolled back
-            code":2011,"message":"Quantity too low
+            20008  {"jsonrpc":"2.0","error":{"code":20008,"message":"Duplicate clientOrderId","description":"ClientOrderId must be unique during trading session"},"id":"cancelOrder.NOAHBTC.buy.559071f116b6b5fcadde"}
+            code":2011,"message":"Quant ity too low
             {"code":10001,"message":"\"price\" must be a positive number
             code":2011,"message":"Quantity too low","description":"Minimum quantity 1"
           */
@@ -106,9 +109,8 @@ class HitbtcParser(op: ActorRef) extends AbsWsParser(op){
               method match {
 
                 case "activeOrders" =>
-                  params.as[List[JsValue]].map(HitbtcParser.toOffer)
-                      .groupBy(_.symbol)
-                      .foreach(p => botMap(p._1) ! GotActiveOrdersWs(p._2, "act"))
+                  val mapped = params.as[List[JsValue]].map(HitbtcParser.toOffer).groupBy(_.symbol)
+                  botMap.map(p => (p._2, mapped.getOrElse(p._1, Seq.empty[Offer]))).foreach(p => p._1 ! GotActiveOrdersWs(p._2, "noId"))
 
                 case "report" =>
                   val offer = HitbtcParser.toOffer(params.as[JsValue])
@@ -117,7 +119,7 @@ class HitbtcParser(op: ActorRef) extends AbsWsParser(op){
                 case "ticker" =>
                   val pair = (params \ "symbol").as[String]
                   val last = (params \ "last").as[BigDecimal]
-                  botMap(pair) ! GotStartPriceWs(Some(last), "subscribeReports")
+                  botMap(pair) ! GotTickerPriceWs(Some(last), "subscribeReports")
 
                 case _ =>
               }
