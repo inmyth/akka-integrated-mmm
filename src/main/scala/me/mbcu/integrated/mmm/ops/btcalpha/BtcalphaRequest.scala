@@ -1,20 +1,20 @@
 package me.mbcu.integrated.mmm.ops.btcalpha
 
-import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRestRequest.BtcalphaStatus.BtcalphaStatus
+import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.BtcalphaStatus.BtcalphaStatus
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Bot, Credentials}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json._
 
-object BtcalphaRestRequest extends AbsRestRequest with MyLogging {
+object BtcalphaRequest extends AbsRestRequest with MyLogging {
 
   def getNonce: String = System.currentTimeMillis().toString
 
   object BtcalphaStatus extends Enumeration {
     type BtcalphaStatus = Value
-    val active: BtcalphaRestRequest.BtcalphaStatus.Value = Value(1)
-    val cancelled: BtcalphaRestRequest.BtcalphaStatus.Value = Value(2)
-    val done: BtcalphaRestRequest.BtcalphaStatus.Value = Value(3)
+    val active: BtcalphaRequest.BtcalphaStatus.Value = Value(1)
+    val cancelled: BtcalphaRequest.BtcalphaStatus.Value = Value(2)
+    val done: BtcalphaRequest.BtcalphaStatus.Value = Value(3)
 
     implicit val enumFormat: Format[BtcalphaStatus] = new Format[BtcalphaStatus] {
       override def reads(json: JsValue): JsResult[BtcalphaStatus] = json.validate[Int].map(BtcalphaStatus(_))
@@ -22,11 +22,7 @@ object BtcalphaRestRequest extends AbsRestRequest with MyLogging {
     }
   }
 
-  def sanitizeSecret(s: String): String =  {
-    val res = StringContext treatEscapes s
-    info(res)
-    res
-  }
+  def sanitizeSecret(s: String): String =  StringContext treatEscapes s
 
   case class BtcalphaParams(sign: String, nonce: String, url: String = "", params: String)
 
@@ -41,7 +37,6 @@ object BtcalphaRestRequest extends AbsRestRequest with MyLogging {
     )
     val sorted = sortToForm(params)
     BtcalphaParams(sign(key, secret), getNonce, Btcalpha.endpoint.format(s"v1/orders/own/?$sorted"), sorted)
-
   }
 
   def newOrder(credentials: Credentials, pair: String, side: Side, price: BigDecimal, amount: BigDecimal) : BtcalphaParams =

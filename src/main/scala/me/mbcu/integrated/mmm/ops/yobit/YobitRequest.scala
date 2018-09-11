@@ -3,7 +3,7 @@ package me.mbcu.integrated.mmm.ops.yobit
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials}
 
-object YobitRestRequest$ extends AbsRestRequest {
+object YobitRequest extends AbsRestRequest {
 
   case class YobitParams(sign: String, params: String)
 

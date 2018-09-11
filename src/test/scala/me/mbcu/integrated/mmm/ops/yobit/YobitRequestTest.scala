@@ -6,7 +6,7 @@ class YobitRequestTest extends FunSuite{
   val secret = "sknfskfw3904239sdf233242"
 
   test ("test Yobit sha512HMAC sign has to be in lowercase") {
-    val test = YobitRestRequest$.ownTrades(secret, "trx_eth")
+    val test = YobitRequest.ownTrades(secret, "trx_eth")
     assert(test.sign.contains("a"))
     assert(!test.sign.contains("A"))
   }

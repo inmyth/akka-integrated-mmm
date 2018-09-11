@@ -103,11 +103,7 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
 
     case GotProvisionalOffer(newId, provisionalTs, noIdoffer) =>
       val offer = noIdoffer.copy(id = newId, createdAt = provisionalTs) // provisionalTs(e.g server time) is needed to correctly remove duplicates
-      offer.side match {
-        case Side.buy => buys += (offer.id -> offer)
-        case _ => sels += (offer.id -> offer)
-      }
-      sort(offer.side)
+      addSort(offer)
       queue1(GetOrderInfo(offer.id , As.RoutineCheck))
 
     case GotOrderInfo(offer, arriveMs, send) =>
@@ -115,7 +111,7 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
       offer.status match {
 
         case Status.active =>
-          addSort(offer)
+          updateOffer(offer)
           val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
           val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
           val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
@@ -127,7 +123,7 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
           val ctr = counter(offer)
           sendOrders(Seq(ctr), as = As.Counter)
 
-        case Status.partiallyFilled => addSort(offer)
+        case Status.partiallyFilled => updateOffer(offer)
 
         case Status.cancelled => removeSort(offer)
 
@@ -209,6 +205,14 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
       case _ => TrieMap.empty[String, Offer]
     }
     l += (offer.id -> offer)
+  }
+
+  def updateOffer(in: Offer): Unit = get(in.id, in.side) foreach(c => addSort(c.copy(updatedAt = in.updatedAt, cumQuantity = in.cumQuantity)))
+
+  def get(id: String, side: Side): Option[Offer] = side match {
+    case Side.buy  => Some(buys(id))
+    case Side.sell => Some(sels(id))
+    case _ => None
   }
 
 }

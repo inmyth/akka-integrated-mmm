@@ -1,3 +1,6 @@
+1.0.3
+- fixed orderGI: order info should update offer not replace it
+
 1.0.2
 - minor fix Livecoin filled amount
 

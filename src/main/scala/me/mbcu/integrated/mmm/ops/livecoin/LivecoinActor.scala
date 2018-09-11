@@ -5,8 +5,8 @@ import akka.stream.ActorMaterializer
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Side, Status}
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRestRequest$.LivecoinState.LivecoinState
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRestRequest$.{LivecoinParams, LivecoinState}
+import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.LivecoinState.LivecoinState
+import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.{LivecoinParams, LivecoinState}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -83,17 +83,17 @@ class LivecoinActor extends AbsRestActor with MyLogging{
     r match {
 
       case a: GetTickerStartPrice =>
-        ws.url(LivecoinRestRequest$.getTicker(a.bot.pair))
+        ws.url(LivecoinRequest.getTicker(a.bot.pair))
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: GetActiveOrders => httpGet(a, LivecoinRestRequest$.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
+      case a: GetActiveOrders => httpGet(a, LivecoinRequest.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
 
-      case a: GetFilledOrders => httpGet(a, LivecoinRestRequest$.getOwnTrades(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, a.lastCounterId.toLong))
+      case a: GetFilledOrders => httpGet(a, LivecoinRequest.getOwnTrades(a.bot.credentials, a.bot.pair, LivecoinState.CLOSED, a.lastCounterId.toLong))
 
-      case a: NewOrder => httpPost(a, LivecoinRestRequest$.newOrder(a.bot.credentials, a.offer.symbol, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, LivecoinRequest.newOrder(a.bot.credentials, a.offer.symbol, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, LivecoinRestRequest$.cancelOrder(a.bot.credentials, a.offer.symbol, a.offer.id))
+      case a: CancelOrder => httpPost(a, LivecoinRequest.cancelOrder(a.bot.credentials, a.offer.symbol, a.offer.id))
     }
 
     def httpPost(a: SendRest, r: LivecoinParams): Unit = {

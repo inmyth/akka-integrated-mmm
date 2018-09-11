@@ -6,7 +6,7 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
-import me.mbcu.integrated.mmm.ops.yobit.YobitRestRequest$.YobitParams
+import me.mbcu.integrated.mmm.ops.yobit.YobitRequest.YobitParams
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
@@ -124,15 +124,15 @@ class YobitActor() extends AbsRestActor() with MyLogging {
           .get()
           .map(response => parse(a, "get ticker", response.body[String]))
 
-      case a: NewOrder => tradeRequest(a, YobitRestRequest$.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => tradeRequest(a, YobitRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => tradeRequest(a, YobitRestRequest$.cancelOrder(a.bot.credentials, a.offer.id))
+      case a: CancelOrder => tradeRequest(a, YobitRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
-      case a: GetActiveOrders => tradeRequest(a, YobitRestRequest$.activeOrders(a.bot.credentials, a.bot.pair))
+      case a: GetActiveOrders => tradeRequest(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
 
-      case a: GetOwnPastTrades => tradeRequest(a, YobitRestRequest$.ownTrades(a.bot.credentials, a.bot.pair))
+      case a: GetOwnPastTrades => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
 
-      case a: GetOrderInfo => tradeRequest(a, YobitRestRequest$.infoOrder(a.bot.credentials, a.id))
+      case a: GetOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
 
     }
 

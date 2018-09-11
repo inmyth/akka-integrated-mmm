@@ -5,10 +5,10 @@ import java.nio.charset.StandardCharsets
 
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials, Side}
-import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRestRequest$.LivecoinState.LivecoinState
+import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.LivecoinState.LivecoinState
 import play.api.libs.json.{Json, Reads, Writes}
 
-object LivecoinRestRequest$ extends AbsRestRequest {
+object LivecoinRequest extends AbsRestRequest {
 
   object LivecoinState extends Enumeration {
     type LivecoinState = Value
