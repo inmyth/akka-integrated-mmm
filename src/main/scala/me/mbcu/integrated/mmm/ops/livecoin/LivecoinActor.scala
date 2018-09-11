@@ -41,7 +41,7 @@ object LivecoinActor {
       Some((data \ "lastModificationTime").as[Long]),
       quantity,
       (data \ "price").as[BigDecimal],
-      Some((data \ "remainingQuantity").as[BigDecimal] - quantity)
+      Some(quantity - (data \ "remainingQuantity").as[BigDecimal])
     )
 
 /*
@@ -160,7 +160,13 @@ class LivecoinActor extends AbsRestActor with MyLogging{
 
           }
 
-      case Failure(e) => errorRetry(a, 0, raw)
+      case Failure(e) =>
+        raw match {
+          case m if m contains "html" => errorRetry(a, 0, raw)
+          case m if m.isEmpty => errorRetry(a, 0, m, shouldEmail = false)
+          case _ => errorIgnore(0, s"Unknown LivecoinActor#parse : $raw")
+        }
+
     }
 
   }

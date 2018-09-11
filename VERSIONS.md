@@ -1,3 +1,6 @@
+1.0.2
+- minor fix Livecoin filled amount
+
 1.0.1
 - escaped secret for Btcalpha
 
