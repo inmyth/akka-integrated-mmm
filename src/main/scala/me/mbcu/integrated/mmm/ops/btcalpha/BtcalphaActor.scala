@@ -83,25 +83,22 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
     }
 
     def httpPost(a: SendRest, r: BtcalphaParams): Unit = {
-      println(r)
-//      ws.url(r.url)
-//        .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-//        .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
-//        .addHttpHeaders("X-SIGN" -> r.sign)
-//        .addHttpHeaders("X-NONCE" -> r.nonce)
-//        .post(r.params)
-//        .map(response => parse(a, r.params, response.body[String]))
+      ws.url(r.url)
+        .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
+        .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
+        .addHttpHeaders("X-SIGN" -> r.sign)
+        .addHttpHeaders("X-NONCE" -> r.nonce)
+        .post(r.params)
+        .map(response => parse(a, r.params, response.body[String]))
     }
 
     def httpGet(a: SendRest, r: BtcalphaParams): Unit = {
-      println(r)
-
-//      ws.url(r.url)
-//        .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
-//        .addHttpHeaders("X-SIGN" -> r.sign)
-//        .addHttpHeaders("X-NONCE" -> r.nonce)
-//        .get()
-//        .map(response => parse(a, r.params, response.body[String]))
+      ws.url(r.url)
+        .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
+        .addHttpHeaders("X-SIGN" -> r.sign)
+        .addHttpHeaders("X-NONCE" -> r.nonce)
+        .get()
+        .map(response => parse(a, r.params, response.body[String]))
     }
   }
 

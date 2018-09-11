@@ -1,4 +1,4 @@
-1.0.3
+1.0.4
 - fixed orderGI: order info should update offer not replace it
 
 1.0.2
