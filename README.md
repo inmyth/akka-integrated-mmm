@@ -10,9 +10,13 @@ As having multiple orders on the same price and quantity is undesirable the bot 
 
 One bot (defined in config's `bots`) should operate on one symbol (pair) only.
 
-Supported exchanges: HitBTC, Okex, Yobit, Fcoin, Livecoin, Btcalpha
-
-
+Supported exchanges:
+- HitBtc
+- Okex
+- Yobit
+- Fcoin
+- Livecoin
+- Btcalpha
 
 [Exchanges](./EXCHANGES.md)
 

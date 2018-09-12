@@ -1,3 +1,6 @@
+1.0.5
+- fixed orderGI: counter the order cache which has the original order info not the API response
+
 1.0.4
 - fixed orderGI: order info should update offer not replace it
 

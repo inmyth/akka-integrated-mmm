@@ -119,9 +119,11 @@ class OrderGIActor(bot: Bot, exchange: AbsExchange) extends AbsOrder(bot) with M
           cancelOrders(cancels._2, As.KillDupes)
 
         case Status.filled =>
+          get(offer.id, offer.side).foreach(cache => { //cache contains original order info
+            val ctr = counter(cache)
+            sendOrders(Seq(ctr), as = As.Counter)
+          })
           removeSort(offer)
-          val ctr = counter(offer)
-          sendOrders(Seq(ctr), as = As.Counter)
 
         case Status.partiallyFilled => updateOffer(offer)
 
