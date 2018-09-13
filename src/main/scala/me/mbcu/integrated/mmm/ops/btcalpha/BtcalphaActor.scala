@@ -7,10 +7,12 @@ import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.BtcalphaStatus.Btcalp
 import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.{BtcalphaParams, BtcalphaStatus}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Bot, Offer, Status}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success, Try}
@@ -32,7 +34,7 @@ object BtcalphaActor {
       },
       createdAt = -1,
       None,
-      (js \ "amount").as[BigDecimal],
+      (js \ "amount").as[BigDecimal], // this is the remaining amount not original amount
       (js \ "price").as[BigDecimal],
       None
     )
@@ -55,6 +57,7 @@ object BtcalphaActor {
 class BtcalphaActor extends AbsRestActor with MyLogging {
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
+
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
   private var ws = StandaloneAhcWSClient()
@@ -64,11 +67,7 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
   override def sendRequest(r: AbsRestActor.SendRest): Unit = {
     r match {
 
-      case a: GetTickerStartPrice =>
-        // https://btc-alpha.com/api/charts/BTC_USD/1/chart/?format=json&limit=1
-        ws.url(BtcalphaRequest.getTickers(a.bot.pair))
-          .get()
-          .map(response => parse(a, "get ticker", response.body[String]))
+      case a: GetTickerStartPrice => httpGet(a, BtcalphaRequest.getTickers(a.bot.pair)) // https://btc-alpha.com/api/charts/BTC_USD/1/chart/?format=json&limit=1
 
       case a: NewOrder => httpPost(a, BtcalphaRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
@@ -88,8 +87,12 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
         .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
         .addHttpHeaders("X-SIGN" -> r.sign)
         .addHttpHeaders("X-NONCE" -> r.nonce)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .post(r.params)
         .map(response => parse(a, r.params, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
 
     def httpGet(a: SendRest, r: BtcalphaParams): Unit = {
@@ -97,8 +100,12 @@ class BtcalphaActor extends AbsRestActor with MyLogging {
         .addHttpHeaders("X-KEY" -> a.bot.credentials.pKey)
         .addHttpHeaders("X-SIGN" -> r.sign)
         .addHttpHeaders("X-NONCE" -> r.nonce)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .get()
         .map(response => parse(a, r.params, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
   }
 

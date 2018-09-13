@@ -103,4 +103,6 @@ abstract class AbsRestActor() extends Actor {
      """.stripMargin
   }
 
+  val requestTimeoutSec = 10
+
 }

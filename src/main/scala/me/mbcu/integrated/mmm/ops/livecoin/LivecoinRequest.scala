@@ -20,8 +20,7 @@ object LivecoinRequest extends AbsRestRequest {
 
   case class LivecoinParams(sign: String, url: String = "", params: String)
 
-  def getTicker(pair: String): String = Livecoin.endpoint.format(s"exchange/ticker?currencyPair=${urlEncode(pair)}")
-
+  def getTicker(pair: String): LivecoinParams = LivecoinParams("unused", Livecoin.endpoint.format(s"exchange/ticker?currencyPair=${urlEncode(pair)}"), "")
 
   def getOwnTrades(credentials: Credentials, pair: String, state: LivecoinState, after: Long): LivecoinParams =
     getOwnTrades(credentials.signature, pair, state, after)
@@ -35,7 +34,6 @@ object LivecoinRequest extends AbsRestRequest {
     val sorted = sortToForm(params)
     LivecoinParams(sign(sorted, secret), Livecoin.endpoint.format(s"exchange/client_orders?$sorted"),  sorted)
   }
-
 
   def getActiveOrders(credentials: Credentials, pair: String, state: LivecoinState, startRow: Int): LivecoinParams =
     getActiveOrders(credentials.signature, pair, state, startRow)

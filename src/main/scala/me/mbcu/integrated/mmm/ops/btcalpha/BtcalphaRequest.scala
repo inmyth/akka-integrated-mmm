@@ -26,7 +26,7 @@ object BtcalphaRequest extends AbsRestRequest with MyLogging {
 
   case class BtcalphaParams(sign: String, nonce: String, url: String = "", params: String)
 
-  def getTickers(pair: String): String = Btcalpha.endpoint.format(s"charts/$pair/1/chart/?format=json&limit=1")
+  def getTickers(pair: String): BtcalphaParams = BtcalphaParams("unused", "unused", Btcalpha.endpoint.format(s"charts/$pair/1/chart/?format=json&limit=1"), "unused")
 
   def getOrders(credentials: Credentials, pair: String, status: BtcalphaStatus): BtcalphaParams = getOrders(credentials.pKey, credentials.signature, pair, status)
 

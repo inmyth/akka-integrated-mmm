@@ -5,12 +5,14 @@ import akka.stream.ActorMaterializer
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, StartMethods, Status}
+import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
 import me.mbcu.integrated.mmm.utils.MyLogging
-import play.api.libs.json.{JsArray, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 object OkexRestActor {
@@ -69,36 +71,38 @@ class OkexRestActor() extends AbsRestActor() with MyLogging {
   override def sendRequest(r: SendRest): Unit = {
 
     r match {
-      case a: NewOrder =>
-        ws.url(s"$url/trade.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRestRequest$.restNewOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity)))
-          .map(response => parse(a, response.body[String]))
+      case a: NewOrder => httpPost(a,s"$url/trade.do", OkexRestRequest.restNewOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder =>
-        ws.url(s"$url/cancel_order.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRestRequest$.restCancelOrder(a.bot.credentials, a.bot.pair, a.offer.id)))
-          .map(response => parse(a, response.body[String]))
+      case a: CancelOrder => httpPost(a,s"$url/cancel_order.do", OkexRestRequest.restCancelOrder(a.bot.credentials, a.bot.pair, a.offer.id))
 
-      case a: GetActiveOrders =>
-        ws.url(s"$url/order_history.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRestRequest$.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.unfilled, a.page)))
-          .map(response => parse(a, response.body[String]))
+      case a: GetActiveOrders => httpPost(a,s"$url/order_history.do", OkexRestRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.unfilled, a.page) )
 
-      case a: GetFilledOrders =>
-        ws.url(s"$url/order_history.do")
-          .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
-          .post(stringifyXWWWForm(OkexRestRequest$.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1)))
-          .map(response => parse(a, response.body[String]))
+      case a: GetFilledOrders => httpPost(a,s"$url/order_history.do", OkexRestRequest.restOwnTrades(a.bot.credentials, a.bot.pair, OkexStatus.filled, 1))
 
-      case a: GetTickerStartPrice =>
-          ws.url(s"$url/ticker.do")
-            .addQueryStringParameters(OkexRestRequest$.restTicker(a.bot.pair).toSeq: _*)
-            .get()
-            .map(response => parse(a, response.body[String]))
+      case a: GetTickerStartPrice => httpGet(a,s"$url/ticker.do", OkexRestRequest.restTicker(a.bot.pair))
+
     }
+
+    def httpPost(a: SendRest, url: String, params: Map[String, String]): Unit =
+      ws.url(url)
+        .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
+        .withRequestTimeout(requestTimeoutSec seconds)
+        .post(stringifyXWWWForm(params))
+        .map(response => parse(a, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
+
+    def httpGet(a: SendRest, url: String, params: Map[String, String]): Unit =
+      ws.url(url)
+        .addQueryStringParameters(params.toSeq: _*)
+        .withRequestTimeout(requestTimeoutSec seconds)
+        .get()
+        .map(response => parse(a, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
+
   }
 
   def parse(a: SendRest, raw: String): Unit = {

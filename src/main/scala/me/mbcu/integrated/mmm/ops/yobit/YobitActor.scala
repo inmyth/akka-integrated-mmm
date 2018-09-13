@@ -10,6 +10,8 @@ import me.mbcu.integrated.mmm.ops.yobit.YobitRequest.YobitParams
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success, Try}
@@ -105,7 +107,6 @@ object YobitActor {
 }
 
 class YobitActor() extends AbsRestActor() with MyLogging {
-
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
 
@@ -119,31 +120,41 @@ class YobitActor() extends AbsRestActor() with MyLogging {
 
   override def sendRequest(r: AbsRestActor.SendRest): Unit = {
     r match {
-      case a: GetTickerStartPrice =>
-        ws.url(url.format("ticker", a.bot.pair))
-          .get()
-          .map(response => parse(a, "get ticker", response.body[String]))
+      case a: GetTickerStartPrice => httpGet(a, url.format("ticker", a.bot.pair))
 
-      case a: NewOrder => tradeRequest(a, YobitRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, YobitRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => tradeRequest(a, YobitRequest.cancelOrder(a.bot.credentials, a.offer.id))
+      case a: CancelOrder => httpPost(a, YobitRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
-      case a: GetActiveOrders => tradeRequest(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
+      case a: GetActiveOrders => httpPost(a, YobitRequest.activeOrders(a.bot.credentials, a.bot.pair))
 
-      case a: GetOwnPastTrades => tradeRequest(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
+      case a: GetOwnPastTrades => httpPost(a, YobitRequest.ownTrades(a.bot.credentials, a.bot.pair))
 
-      case a: GetOrderInfo => tradeRequest(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
+      case a: GetOrderInfo => httpPost(a, YobitRequest.infoOrder(a.bot.credentials, a.id))
 
     }
 
-    def tradeRequest(a: SendRest, r: YobitParams): Unit = {
+     def httpGet(a: SendRest, url: String): Unit =
+       ws.url(url)
+         .withRequestTimeout(requestTimeoutSec seconds)
+         .get()
+         .map(response => parse(a, url, response.body[String]))
+         .recover{
+           case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+         }
+
+
+    def httpPost(a: SendRest, r: YobitParams): Unit =
       ws.url(s"$urlTrade")
         .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
         .addHttpHeaders("Key" -> a.bot.credentials.pKey)
         .addHttpHeaders("Sign" -> r.sign)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .post(r.params)
         .map(response => parse(a, r.params, response.body[String]))
-    }
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
 
   }
 

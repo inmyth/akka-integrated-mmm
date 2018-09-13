@@ -9,6 +9,8 @@ import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.LivecoinState.Livecoi
 import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.{LivecoinParams, LivecoinState}
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
@@ -72,20 +74,17 @@ object LivecoinActor {
 class LivecoinActor extends AbsRestActor with MyLogging{
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
+
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
   private var ws = StandaloneAhcWSClient()
-
   override def start(): Unit = setOp(Some(sender()))
 
   override def sendRequest(r: AbsRestActor.SendRest): Unit = {
 
     r match {
 
-      case a: GetTickerStartPrice =>
-        ws.url(LivecoinRequest.getTicker(a.bot.pair))
-          .get()
-          .map(response => parse(a, "get ticker", response.body[String]))
+      case a: GetTickerStartPrice => httpGet(a, LivecoinRequest.getTicker(a.bot.pair))
 
       case a: GetActiveOrders => httpGet(a, LivecoinRequest.getActiveOrders(a.bot.credentials, a.bot.pair, LivecoinState.OPEN, (a.page - 1) * 100 ))
 
@@ -101,8 +100,12 @@ class LivecoinActor extends AbsRestActor with MyLogging{
         .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
         .addHttpHeaders("Sign" -> r.sign)
         .addHttpHeaders("API-key" -> a.bot.credentials.pKey)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .post(r.params)
         .map(response => parse(a, r.params, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
 
     def httpGet(a: SendRest, r: LivecoinParams): Unit = {
@@ -110,10 +113,13 @@ class LivecoinActor extends AbsRestActor with MyLogging{
         .addHttpHeaders("Content-Type" -> "application/x-www-form-urlencoded")
         .addHttpHeaders("Sign" -> r.sign)
         .addHttpHeaders("API-key" -> a.bot.credentials.pKey)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .get()
         .map(response => parse(a, r.params, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
-
   }
 
   def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
@@ -136,6 +142,7 @@ class LivecoinActor extends AbsRestActor with MyLogging{
               else if (raw contains "Minimal amount is") errorIgnore(-1, "minimal amount too low: ${a.bot.pair}")
               else if (raw contains "insufficient funds")  errorIgnore(-1, s"insufficient funds: ${a.bot.pair}")
               else if (raw contains "Cannot get a connection, pool error Timeout waiting for idle object" ) errorRetry(a, 0, raw, shouldEmail = false)
+              else if (raw contains "Service is under maintenance") errorRetry(a, 0, raw, shouldEmail = false)
               else errorIgnore(-1, raw)
             }
           }
@@ -155,20 +162,17 @@ class LivecoinActor extends AbsRestActor with MyLogging{
                 val res = (js \ "data").as[List[JsValue]].map(LivecoinActor.toOffer)
 //                val isNextPage = (js \ "totalRows").as[Int] > (js \ "endRow").as[Int] // broken
                 a.book ! GotActiveOrders(res, a.page, nextPage = false , arriveMs, a)
-
             }
 
           }
 
       case Failure(e) =>
         raw match {
-          case m if m contains "html" => errorRetry(a, 0, raw)
+          case m if m contains "html" => errorRetry(a, 0, raw, shouldEmail = false)
           case m if m.isEmpty => errorRetry(a, 0, m, shouldEmail = false)
           case _ => errorIgnore(0, s"Unknown LivecoinActor#parse : $raw")
         }
-
     }
-
   }
 
 }

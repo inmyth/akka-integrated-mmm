@@ -21,7 +21,7 @@ object FcoinMethod extends Enumeration {
   val POST, GET = Value
 }
 
-object FcoinRestRequest$ extends AbsRestRequest {
+object FcoinRestRequest extends AbsRestRequest {
 
   case class FcoinParams(sign: String, params: String, ts: Long, url: String = "", js: String)
 
@@ -34,6 +34,9 @@ object FcoinRestRequest$ extends AbsRestRequest {
     )
     sign(params, secret, FcoinMethod.GET, Fcoin.endpoint.format("orders"))
   }
+
+
+  def getTickers(pair: String): FcoinParams = FcoinParams("unused", pair, System.currentTimeMillis(), Fcoin.endpoint.format(s"market/ticker/$pair"), "unused")
 
   def getOrders(credentials: Credentials, pair: String, state: FcoinState, after: Int) : FcoinParams = getOrders(credentials.signature, pair, state, after)
 

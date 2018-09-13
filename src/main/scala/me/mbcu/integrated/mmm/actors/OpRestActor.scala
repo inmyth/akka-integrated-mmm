@@ -54,8 +54,8 @@ class OpRestActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef)
     case CheckSafeForSeed(ref, bot) => ref ! SafeForSeed(AbsOrder.isSafeForSeed(q, nos, bot))
 
     case ErrorRetryRest(sendRequest, code, msg, shouldEmail) =>
-      base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
       q += sendRequest
+      base foreach(_ ! ErrorRetryRest(sendRequest, code, msg, shouldEmail))
 
     case a : ErrorShutdown => base foreach(_ ! a)
 

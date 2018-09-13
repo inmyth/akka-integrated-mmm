@@ -1,3 +1,7 @@
+1.0.6
+- added Livecoin error condition
+- added rest timeout handler (Livecoin suffers from super long timeout)
+
 1.0.5
 - fixed orderGI: counter the order cache which has the original order info not the API response
 

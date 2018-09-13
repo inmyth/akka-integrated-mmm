@@ -48,6 +48,8 @@ As the bot only counters one order with one order, countering an order with a lo
 
 In this method, the bot maintains in-memory open orders. Every interval, the bot sends getOrderInfo request to check the status of an order.
 
+The original request is cached in memory. Subsequent order info will only update it (to preserve the original information).
+
 If the status is filled the bot will counter it and remove the order from the memory.
 
 The bot also checks regularly if it needs to reseed or trim a side.

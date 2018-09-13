@@ -6,7 +6,7 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
-import me.mbcu.integrated.mmm.ops.fcoin.FcoinRestRequest$.FcoinParams
+import me.mbcu.integrated.mmm.ops.fcoin.FcoinRestRequest.FcoinParams
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinState.FcoinState
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsLookupResult, JsValue, Json}
@@ -75,6 +75,9 @@ object FcoinActor {
 class FcoinActor() extends AbsRestActor() with MyLogging {
   import play.api.libs.ws.DefaultBodyReadables._
   import play.api.libs.ws.DefaultBodyWritables._
+
+  import scala.concurrent.duration._
+
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContextExecutor = global
   private var ws = StandaloneAhcWSClient()
@@ -84,18 +87,15 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
   override def sendRequest(r: AbsRestActor.SendRest): Unit = {
 
     r match {
-      case a: GetTickerStartPrice =>
-        ws.url(Fcoin.endpoint.format(s"market/ticker/${a.bot.pair}"))
-            .get()
-            .map(response => parse(a, "get ticker", response.body[String]))
+      case a: GetTickerStartPrice => httpGet(a, FcoinRestRequest.getTickers(a.bot.pair))
 
-      case a: GetActiveOrders => httpGet(a, FcoinRestRequest$.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
+      case a: GetActiveOrders => httpGet(a, FcoinRestRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.submitted, a.page))
 
-      case a: GetFilledOrders => httpGet(a, FcoinRestRequest$.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
+      case a: GetFilledOrders => httpGet(a, FcoinRestRequest.getOrders(a.bot.credentials, a.bot.pair, FcoinState.filled, 1))
 
-      case a: NewOrder => httpPost(a, FcoinRestRequest$.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
+      case a: NewOrder => httpPost(a, FcoinRestRequest.newOrder(a.bot.credentials, a.bot.pair, a.offer.side, a.offer.price, a.offer.quantity))
 
-      case a: CancelOrder => httpPost(a, FcoinRestRequest$.cancelOrder(a.bot.credentials, a.offer.id))
+      case a: CancelOrder => httpPost(a, FcoinRestRequest.cancelOrder(a.bot.credentials, a.offer.id))
 
     }
 
@@ -104,8 +104,12 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
         .addHttpHeaders("FC-ACCESS-KEY" -> a.bot.credentials.pKey)
         .addHttpHeaders("FC-ACCESS-SIGNATURE" -> f.sign)
         .addHttpHeaders("FC-ACCESS-TIMESTAMP" -> f.ts.toString)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .get()
         .map(response => parse(a, f.url, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
 
     def httpPost(a: SendRest, r: FcoinParams): Unit = {
@@ -114,8 +118,12 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
         .addHttpHeaders("FC-ACCESS-KEY" -> a.bot.credentials.pKey)
         .addHttpHeaders("FC-ACCESS-SIGNATURE" -> r.sign)
         .addHttpHeaders("FC-ACCESS-TIMESTAMP" -> r.ts.toString)
+        .withRequestTimeout(requestTimeoutSec seconds)
         .post(r.js)
         .map(response => parse(a, r.params, response.body[String]))
+        .recover{
+          case e: Exception => errorRetry(a, 0, e.getMessage, shouldEmail = false)
+        }
     }
   }
 

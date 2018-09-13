@@ -1,11 +1,16 @@
 package me.mbcu.integrated.mmm.ops.livecoin
 
-import me.mbcu.integrated.mmm.ops.common.Status
+import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
+import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
+import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
 import org.scalatest.FunSuite
+import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.{JsLookupResult, JsValue, Json}
 
+import scala.util.{Failure, Success, Try}
 
-class LivecoinActorTest extends FunSuite{
+
+class LivecoinActorTest extends FunSuite with MockitoSugar{
 
   test ("Livecoin to offer") {
     val a =
@@ -156,4 +161,6 @@ class LivecoinActorTest extends FunSuite{
     assert(res.size === 2)
     assert(res.head.updatedAt.get < res(1).updatedAt.get)
   }
+
+
 }
