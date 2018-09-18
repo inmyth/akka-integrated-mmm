@@ -1,3 +1,7 @@
+1.0.8
+- Added timeout mechanism in websocket
+- undo onDisconnect method
+
 1.0.7
 - WsActor now doesn't wait for onDisconnect to reconnect
 

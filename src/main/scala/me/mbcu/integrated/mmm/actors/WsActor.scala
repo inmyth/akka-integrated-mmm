@@ -7,14 +7,13 @@ import akka.dispatch.ExecutionContexts.global
 import com.neovisionaries.ws.client
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import me.mbcu.integrated.mmm.actors.WsActor._
-import me.mbcu.integrated.mmm.ops.Definitions
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 object WsActor {
   def props(): Props = Props(new WsActor())
@@ -40,6 +39,7 @@ class WsActor() extends Actor with MyLogging{
   private var ws : Option[com.neovisionaries.ws.client.WebSocket] = None
   private var main: Option[ActorRef] = None
   private var disCan: Option[Cancellable] = None
+  private val timeout: Int = 5000
 
   override def receive: Receive = {
 
@@ -51,10 +51,16 @@ class WsActor() extends Actor with MyLogging{
       ws match {
         case None =>
           val factory = new WebSocketFactory
+          factory.setConnectionTimeout(timeout)
           val websocket = factory.createSocket(url)
           websocket.addListener(ScalaWebSocketListener)
           ws = Some(websocket)
-          websocket.connect
+          Try(websocket.connect) match { // failure at connecting will result in exception. Listeners only sense errors when ws is alive
+            case Success(w) => info("WsActor got connection. See onConnected for handler")
+            case Failure(e) => // timeout error
+              error(e.getMessage)
+              self ! WsRequestClient
+          }
 
         case _ => // don't init a client
 
@@ -73,18 +79,16 @@ class WsActor() extends Actor with MyLogging{
 
     case WsError(msg) =>
       error(msg)
-      disCan match {
-        case None =>
-          ws foreach(_.clearListeners())
-          ws foreach(_.disconnect("server down"))
-          ws = None
-          disCan = Some(context.system.scheduler.scheduleOnce(500 milliseconds, self, message="request new connection"))
-        case _ => //ignore
-      }
+      ws foreach(_.disconnect("server down")) // One client can only be disconnected once
 
-    case "request new connection" =>  main foreach(_ ! WsRequestClient)
+    case WsDisconnected =>
+      info("WsActor client disconnected")
+      self ! WsRequestClient
 
-    case WsDisconnected => // shouldn't return because listeners are gone
+    case WsRequestClient =>
+      ws foreach(_.clearListeners())
+      ws = None
+      main foreach(_ ! WsRequestClient)
 
   }
 
