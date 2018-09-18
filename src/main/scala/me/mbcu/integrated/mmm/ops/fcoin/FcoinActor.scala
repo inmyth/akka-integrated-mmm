@@ -14,6 +14,7 @@ import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success, Try}
+import scala.language.postfixOps
 
 object FcoinActor {
 

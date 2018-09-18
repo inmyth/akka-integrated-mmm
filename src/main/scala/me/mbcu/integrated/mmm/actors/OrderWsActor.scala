@@ -3,7 +3,7 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OpWsActor.QueueWs
-import me.mbcu.integrated.mmm.actors.WsActor.WsDisconnected
+import me.mbcu.integrated.mmm.actors.WsActor.WsRequestClient
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorShutdown, Settings, ShutdownCode}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
@@ -40,7 +40,7 @@ class OrderWsActor(bot: Bot, exchange: AbsExchange, req: AbsWsRequest) extends A
 
     case "log" => info(Offer.dump(bot, sortedBuys, sortedSels))
 
-    case WsDisconnected(reconnectMs) => // stop scheduler
+    case WsRequestClient => // stop scheduler
 
     case GotSubscribe(requestId) => queue(pendings.values.toSeq)
 

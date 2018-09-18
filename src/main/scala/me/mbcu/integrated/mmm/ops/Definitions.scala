@@ -65,7 +65,6 @@ object Definitions {
     val getFilledSeconds:Int = 5
     val intervalLogSeconds = 15
     val intervalSeedSeconds:Int = 5
-    val wsRetrySeconds:Int = 2
     val wsInitSeconds:Int = 1
   }
 

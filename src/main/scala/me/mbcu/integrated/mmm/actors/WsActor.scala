@@ -2,7 +2,8 @@ package me.mbcu.integrated.mmm.actors
 
 import java.util
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.dispatch.ExecutionContexts.global
 import com.neovisionaries.ws.client
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import me.mbcu.integrated.mmm.actors.WsActor._
@@ -11,12 +12,18 @@ import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
 import me.mbcu.integrated.mmm.utils.MyLogging
 import play.api.libs.json.{JsValue, Json}
 
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 object WsActor {
   def props(): Props = Props(new WsActor())
 
   object WsConnected
 
-  case class WsDisconnected(reconnectMs: Int)
+  object WsDisconnected
+
+  object WsRequestClient
 
   case class WsConnect(url: String)
 
@@ -29,14 +36,16 @@ object WsActor {
 }
 
 class WsActor() extends Actor with MyLogging{
+  private implicit val ec: ExecutionContextExecutor = global
   private var ws : Option[com.neovisionaries.ws.client.WebSocket] = None
   private var main: Option[ActorRef] = None
+  private var disCan: Option[Cancellable] = None
 
   override def receive: Receive = {
 
     case "start" =>
       main = Some(sender)
-      main foreach(_ ! WsDisconnected(Definitions.Settings.wsInitSeconds))
+      main foreach(_ ! WsRequestClient)
 
     case WsConnect(url) =>
       ws match {
@@ -47,7 +56,7 @@ class WsActor() extends Actor with MyLogging{
           ws = Some(websocket)
           websocket.connect
 
-        case _ => // don't init a connecting client
+        case _ => // don't init a client
 
       }
 
@@ -64,11 +73,19 @@ class WsActor() extends Actor with MyLogging{
 
     case WsError(msg) =>
       error(msg)
-      ws foreach(_.disconnect("server down")) // is it safe called multiple times ? If this is called after new client is init then ...
+      disCan match {
+        case None =>
+          ws foreach(_.clearListeners())
+          ws foreach(_.disconnect("server down"))
+          ws = None
+          disCan = Some(context.system.scheduler.scheduleOnce(500 milliseconds, self, message="request new connection"))
+        case _ => //ignore
+      }
 
-    case a: WsDisconnected =>
-      ws = None
-      main foreach(_ ! a)
+    case "request new connection" =>  main foreach(_ ! WsRequestClient)
+
+    case WsDisconnected => // shouldn't return because listeners are gone
+
   }
 
   object ScalaWebSocketListener extends WebSocketListener {
@@ -93,8 +110,7 @@ class WsActor() extends Actor with MyLogging{
 
     override def onContinuationFrame(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame): Unit = {}
     override def onDisconnected(x$1: com.neovisionaries.ws.client.WebSocket, x$2: com.neovisionaries.ws.client.WebSocketFrame, x$3: com.neovisionaries.ws.client.WebSocketFrame, closedByServer: Boolean): Unit =
-        self ! WsDisconnected(Definitions.Settings.wsInitSeconds)
-
+        self ! WsDisconnected
 
     override def onError(x$1: com.neovisionaries.ws.client.WebSocket, e: com.neovisionaries.ws.client.WebSocketException): Unit =
     self ! WsError(s"WsActor#onError: ${e.getMessage}")

@@ -1,3 +1,6 @@
+1.0.7
+- WsActor now doesn't wait for onDisconnect to reconnect
+
 1.0.6
 - added Livecoin error condition
 - added rest timeout handler (Livecoin suffers from super long timeout)

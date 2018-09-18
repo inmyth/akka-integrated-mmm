@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OpWsActor._
 import me.mbcu.integrated.mmm.actors.WsActor._
-import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorShutdown}
+import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorShutdown, Settings}
 import me.mbcu.integrated.mmm.ops.common.AbsWsParser.{GotSubscribe, LoggedIn, SendWs}
 import me.mbcu.integrated.mmm.ops.common._
 import me.mbcu.integrated.mmm.utils.MyLogging
@@ -36,9 +36,9 @@ class OpWsActor(exchangeDef: AbsExchange, bots: Seq[Bot], fileActor: ActorRef) e
       client = Some(context.actorOf(Props(new WsActor()), name = "wsclient"))
       client.foreach(_ ! "start")
 
-    case a: WsDisconnected =>
-      botMap.values.foreach(_ ! a)
-      context.system.scheduler.scheduleOnce(a.reconnectMs seconds, self, "reconnect websocket")
+    case WsRequestClient =>
+      botMap.values.foreach(_ ! WsRequestClient)
+      context.system.scheduler.scheduleOnce(Settings.wsInitSeconds seconds, self, "reconnect websocket")
 
     case "reconnect websocket" => client.foreach(_ ! WsConnect(exchangeDef.endpoint))
 
