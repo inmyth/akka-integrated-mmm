@@ -1,6 +1,6 @@
 name := "akka-integrated-mmm"
 
-version := "1.0.8"
+version := "1.0.9"
 
 scalaVersion := "2.12.6"
 
@@ -12,6 +12,8 @@ mainClass in assembly := Some("me.mbcu.integrated.mmm.Application")
 
 scalacOptions := Seq("-unchecked", "-deprecation")
 scalacOptions += "-feature"
+
+resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
@@ -32,10 +34,10 @@ libraryDependencies ++= Seq(
   "org.mockito"       % "mockito-core"          % "2.19.1"         % Test
 )
 
+
 excludeDependencies += "commons-logging" % "commons-logging"
-
+libraryDependencies += "com.github.inmyth" % "scala-mylogging" % "26b5b2c"
 libraryDependencies += "com.typesafe.play" %% "play-json-joda" % "2.6.9"
-
 libraryDependencies += "com.typesafe.play" %% "play-ahc-ws-standalone" % "2.0.0-M1"
 libraryDependencies += "com.typesafe.play" %% "play-ws-standalone-json" % "2.0.0-M1"
 libraryDependencies += "javax.xml.crypto" % "jsr105-api" % "1.0.1"

@@ -8,7 +8,7 @@ import com.neovisionaries.ws.client
 import com.neovisionaries.ws.client.{WebSocketFactory, WebSocketListener, WebSocketState}
 import me.mbcu.integrated.mmm.actors.WsActor._
 import me.mbcu.integrated.mmm.ops.Definitions.ShutdownCode
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.ExecutionContextExecutor

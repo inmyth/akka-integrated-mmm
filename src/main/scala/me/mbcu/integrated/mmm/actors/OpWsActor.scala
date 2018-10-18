@@ -7,7 +7,7 @@ import me.mbcu.integrated.mmm.actors.WsActor._
 import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorShutdown, Settings}
 import me.mbcu.integrated.mmm.ops.common.AbsWsParser.{GotSubscribe, LoggedIn, SendWs}
 import me.mbcu.integrated.mmm.ops.common._
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._

@@ -6,7 +6,7 @@ import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorShutdown}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsWsParser.SendWs
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 import play.api.libs.json.JsValue
 
 trait AbsWsRequest {

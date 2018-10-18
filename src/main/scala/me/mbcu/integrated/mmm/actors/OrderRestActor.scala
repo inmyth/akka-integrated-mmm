@@ -8,7 +8,7 @@ import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueReques
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common._
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._

@@ -2,8 +2,8 @@ package me.mbcu.integrated.mmm.ops.btcalpha
 
 import me.mbcu.integrated.mmm.ops.btcalpha.BtcalphaRequest.BtcalphaStatus.BtcalphaStatus
 import me.mbcu.integrated.mmm.ops.common.Side.Side
-import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Bot, Credentials}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.integrated.mmm.ops.common.{AbsRestRequest, Credentials}
+import me.mbcu.scala.MyLogging
 import play.api.libs.json._
 
 object BtcalphaRequest extends AbsRestRequest with MyLogging {

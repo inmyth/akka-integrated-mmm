@@ -7,13 +7,13 @@ import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Side, Status}
 import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.LivecoinState.LivecoinState
 import me.mbcu.integrated.mmm.ops.livecoin.LivecoinRequest.{LivecoinParams, LivecoinState}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 import play.api.libs.json.{JsValue, Json}
-import scala.concurrent.duration._
-import scala.language.postfixOps
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 
 object LivecoinActor {

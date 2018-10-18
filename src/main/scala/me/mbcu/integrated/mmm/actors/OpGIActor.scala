@@ -7,7 +7,7 @@ import me.mbcu.integrated.mmm.ops.Definitions.{ErrorIgnore, ErrorRetryRest, Erro
 import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOrder, Bot}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor

@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.{NewOrder, SendRest}
 import me.mbcu.integrated.mmm.ops.common.{AbsExchange, AbsOpActor, Bot}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 import org.bouncycastle.util.encoders.Hex
 import org.web3j.crypto.{Credentials, ECKeyPair, Sign}
 

@@ -1,3 +1,6 @@
+1.0.9
+- replaced local MyLogging
+
 1.0.8
 - Added timeout mechanism in websocket
 - undo onDisconnect method

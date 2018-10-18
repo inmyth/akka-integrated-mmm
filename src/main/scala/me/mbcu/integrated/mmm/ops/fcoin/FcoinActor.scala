@@ -8,13 +8,13 @@ import me.mbcu.integrated.mmm.ops.common.Side.Side
 import me.mbcu.integrated.mmm.ops.common.{AbsRestActor, Offer, Status}
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinRestRequest.FcoinParams
 import me.mbcu.integrated.mmm.ops.fcoin.FcoinState.FcoinState
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 import play.api.libs.json.{JsLookupResult, JsValue, Json}
 import play.api.libs.ws.ahc.StandaloneAhcWSClient
 
 import scala.concurrent.ExecutionContextExecutor
-import scala.util.{Failure, Success, Try}
 import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
 
 object FcoinActor {
 

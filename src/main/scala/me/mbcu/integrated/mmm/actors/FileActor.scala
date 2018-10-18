@@ -12,8 +12,8 @@ import com.beachape.filemanagement.RegistryTypes._
 import me.mbcu.integrated.mmm.actors.BaseActor.ConfigReady
 import me.mbcu.integrated.mmm.actors.FileActor.millisFileName
 import me.mbcu.integrated.mmm.actors.OrderRestActor._
-import me.mbcu.integrated.mmm.ops.common.{Bot, Config, BotCache}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.integrated.mmm.ops.common.{Bot, BotCache, Config}
+import me.mbcu.scala.MyLogging
 import play.api.libs.json.Json
 
 import scala.util.{Failure, Success, Try}

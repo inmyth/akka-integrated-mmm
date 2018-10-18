@@ -3,12 +3,11 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{Actor, ActorRef, Props}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.BaseActor.{ConfigReady, Shutdown}
-import me.mbcu.integrated.mmm.actors.OrderRestActor.{GetLastCounter, WriteLastCounter}
 import me.mbcu.integrated.mmm.actors.SesActor.{CacheMessages, MailSent}
 import me.mbcu.integrated.mmm.ops.Definitions
 import me.mbcu.integrated.mmm.ops.Definitions._
 import me.mbcu.integrated.mmm.ops.common.{Bot, Config}
-import me.mbcu.integrated.mmm.utils.MyLogging
+import me.mbcu.scala.MyLogging
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}

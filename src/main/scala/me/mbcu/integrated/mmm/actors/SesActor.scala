@@ -8,12 +8,12 @@ import jp.co.bizreach.ses.SESClient
 import jp.co.bizreach.ses.models.{Address, Content, Email}
 import me.mbcu.integrated.mmm.actors.SesActor.{CacheMessages, MailSent}
 import me.mbcu.integrated.mmm.ops.Definitions
-import me.mbcu.integrated.mmm.utils.MyLogging
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import me.mbcu.scala.MyLogging
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Try
 
 object SesActor {
