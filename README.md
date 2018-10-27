@@ -87,8 +87,10 @@ Seed determines how the bot starts. Refer to Supported Exchanges for allowed met
 **lastTicker**, **any valid number**: cancels all active orders, seeds new orders from config. Any uncountered orders during the time the bot is not running will not be countered. <br>
 This method is used when starting fresh or when config was changed.
 
+**lastOwn** : uses last traded price as new seed price. As the amount information is lost, amount is taken from config.
+
 **cont**: continues from last session. Any uncountered orders during the time the bot is not running will be countered. <br>
-To correctly run this method, the bot should not be inactive longer than exchange's trade history retention. Some exchanges keep trade history for 2 days so if the bot is restarted later, it may not be able to retrieve all filled orders.
+To correctly run this method, the account **needs to have some active orders** and the bot should not be inactive longer than exchange's trade history retention. Some exchanges keep trade history for 2 days so if the bot is restarted later, it may not be able to retrieve all filled orders.
 
 #### gridSpace
 

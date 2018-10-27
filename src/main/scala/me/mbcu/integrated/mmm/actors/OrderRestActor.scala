@@ -3,7 +3,7 @@ package me.mbcu.integrated.mmm.actors
 import akka.actor.{ActorRef, Cancellable}
 import akka.dispatch.ExecutionContexts.global
 import me.mbcu.integrated.mmm.actors.OrderRestActor._
-import me.mbcu.integrated.mmm.ops.Definitions.Settings
+import me.mbcu.integrated.mmm.ops.Definitions.{ErrorShutdown, Settings, ShutdownCode}
 import me.mbcu.integrated.mmm.ops.common.AbsOrder.{CheckSafeForSeed, QueueRequest, SafeForSeed}
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor.As.As
 import me.mbcu.integrated.mmm.ops.common.AbsRestActor._
@@ -39,7 +39,7 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
       op = Some(sender())
       fileActor ! GetLastCounter(self, bot, As.Init)
 
-    case GotLastCounter(botCache, as) => qFilledOrders(Seq.empty[Offer], botCache.lastCounteredId, as)
+    case GotLastCounter(botCache, as) => qFilledOrders(Seq.empty[Offer], botCache.lastCounteredId, as) //must start from past filled orders. Starting bout qFilledOrders and qActiverOrders will mess up init orders
 
     case GotActiveOrders(offers, currentPage, nextPage, arriveMs, send) =>
       if (nextPage) {
@@ -51,22 +51,27 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
         send.as match {
           case As.Init =>
             bot.seed match {
-              case a if a.equals(StartMethods.cont.toString) => // ignore
+              case a if a.equals(StartMethods.cont.toString) => // wont arrive here
+
               case a if a.equals(StartMethods.lastTicker.toString) =>
                 qClearOrders(activeOrders, As.Init)
                 queue1(GetTickerStartPrice(As.Init))
+
+              case a if a.equals(StartMethods.lastOwn.toString) => op foreach(_ ! ErrorShutdown(ShutdownCode.fatal, -1, s"$a is not supported"))
+
               case _ =>
                 qClearOrders(activeOrders, As.Init)
-                val seed = initialSeed(Seq.empty[Offer], Seq.empty[Offer], BigDecimal(bot.seed))
-                qSeed(seed)
+                qSeed(initialSeed(Seq.empty[Offer], Seq.empty[Offer], BigDecimal(bot.seed)))
+                scheduleGetFilled(Settings.getFilledSeconds)
+
             }
+
           case As.RoutineCheck =>
             val dupes = AbsOrder.getDuplicates(sortedBuys) ++ AbsOrder.getDuplicates(sortedSels)
             val trims = if (bot.isStrictLevels) trim(sortedBuys, sortedSels, Side.buy) ++ trim(sortedBuys, sortedSels, Side.sell) else Seq.empty[Offer]
             val cancels = AbsOrder.margeTrimAndDupes(trims, dupes)
             qClearOrders(cancels._1, As.Trim)
             qClearOrders(cancels._2, As.KillDupes)
-
             qSeed(grow(sortedBuys, sortedSels, Side.buy) ++ grow(sortedBuys, sortedSels, Side.sell))
 
           case _ => // not handled
@@ -76,20 +81,23 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
 
     case GotUncounteredOrders(uncountereds, latestCounterId, isSortedFromOldest, arriveMs, send) =>
       fileActor ! WriteLastCounter(self, bot, BotCache(latestCounterId.getOrElse(send.lastCounterId)))
-      scheduleGetFilled(Settings.getFilledSeconds)
+      def pipe(): Unit = {
+        if (uncountereds.isEmpty) scheduleGetActive(1) else qCounter(uncountereds)
+        scheduleGetFilled(Settings.getFilledSeconds) // should it be moved to GotActiveOrders$As.RoutineCheck ?
+      }
       send.as match {
         case As.Init =>
           bot.seed match {
-            case a if a.equals(StartMethods.cont.toString) =>
-              qCounter(uncountereds)
-            case _ => qActiveOrders(Seq.empty[Offer], System.currentTimeMillis(), page = 1, As.Init)
+            case a if a.equals(StartMethods.cont.toString) => pipe()
+
+            case _ => qActiveOrders(Seq.empty[Offer], System.currentTimeMillis(), page = 1, As.Init) // lastTicker or custom = config change, so past filled orders are not countered
           }
-        case As.RoutineCheck =>
-          qCounter(uncountereds)
+
+        case As.RoutineCheck => pipe()
 
         case _ => // not handled
       }
-      if (uncountereds.isEmpty) self ! "get active orders"
+
 
     case GotTickerStartPrice(price, arriveMs, send) => // start ownTicker
       price match {
@@ -106,20 +114,20 @@ class OrderRestActor(bot: Bot, exchange: AbsExchange, fileActor: ActorRef) exten
         scheduleGetActive(1)
       }
 
-    case "get active orders" => op foreach(_! CheckSafeForSeed(self, bot))
+    case "get routine active orders" => op foreach(_! CheckSafeForSeed(self, bot))
 
     case "get filled orders" => fileActor ! GetLastCounter(self, bot, As.RoutineCheck)
 
     case LogActives(arriveMs, buys, sels) =>
       (arriveMs / 1000L) % 30 match {
-      case x if x < 33 | x > 27 => info(Offer dump(bot, buys, sels))
-      case _ => // ignore log
-    }
+        case x if x < 33 | x > 27 => info(Offer dump(bot, buys, sels))
+        case _ => // ignore log
+      }
   }
 
   def scheduleGetActive(s: Int) : Unit = {
     getActiveCancellable foreach(_.cancel())
-    getActiveCancellable = Some(context.system.scheduler.scheduleOnce(s seconds, self, message="get active orders"))
+    getActiveCancellable = Some(context.system.scheduler.scheduleOnce(s seconds, self, message="get routine active orders"))
   }
 
   def scheduleGetFilled(s: Int): Unit = {

@@ -87,7 +87,6 @@ class FileActor(cfgPath: String, msPath: String) extends Actor {
 
     case GetLastCounter(book, bot, as) => book ! GotLastCounter(FileActor.readLastCounterId(msPath, bot), as)
 
-
     case WriteLastCounter(book, bot, m) => FileActor.writeFile(millisFileName(msPath, bot), Json.toJson(m).toString())
 
   }

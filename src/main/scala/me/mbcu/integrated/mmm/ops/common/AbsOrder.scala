@@ -23,7 +23,6 @@ object AbsOrder {
       }
       .isEmpty
 
-
   /**
     * merge trims and killDupes while preserving As
     * @param trims

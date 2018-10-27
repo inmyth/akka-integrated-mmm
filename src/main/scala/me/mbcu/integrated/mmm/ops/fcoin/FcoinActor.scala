@@ -129,7 +129,6 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
   }
 
   def parse(a: AbsRestActor.SendRest, request: String, raw: String): Unit = {
-    info(logResponse(a, raw))
     val arriveMs = System.currentTimeMillis()
 
     a match {

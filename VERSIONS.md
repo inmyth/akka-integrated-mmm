@@ -1,3 +1,6 @@
+1.1.0
+- fixed OrderRestActor, initseed happened to fast before ticker price arrived
+
 1.0.9
 - replaced local MyLogging
 

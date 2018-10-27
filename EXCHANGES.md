@@ -4,7 +4,7 @@
 - ws: supports `lastTicker` and custom start price
 
 ### okexRest
-- rest: supports `lastTicker`, `lastOwn`, `cont` and custom start price
+- rest: supports `lastTicker`, `cont` and custom start price
 - *Make sure API key and secret are correct.* Okex returns errors reserved for sign error (10007, 10005) even a Cloudlare website for non-sign error.
 As such 10007, 10005 and html response will be retried.
 - no mention of API limit
@@ -24,7 +24,7 @@ As such 10007, 10005 and html response will be retried.
 - Trade History response doesn't have filled / partially filled status. To rebuild a fully filled order, need gather multiple fragmented trades.
 
 ### fcoin
-- rest: supports `lastTicker`, `lastOwn`,`cont` and custom start price
+- rest: supports `lastTicker`,`cont` and custom start price
 - Timestamp is required to sign
 - API limit = 100 / 10 seconds per user
 - TradeHistory
@@ -32,7 +32,7 @@ As such 10007, 10005 and html response will be retried.
     - Use order id (String) as indicator
 
 ### livecoin
-- rest: supports `lastTicker`, `lastOwn`, `cont` and custom start price
+- rest: supports `lastTicker`, `cont` and custom start price
 - get client orders's pagination is broken (startRow doesn't work)
 - may have super long timeout (more than 2 minutes)
 - expect all active order to be at most 100 at a time
