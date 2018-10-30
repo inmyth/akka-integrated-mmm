@@ -155,10 +155,21 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
               a.book ! GotTickerStartPrice(Some(lastPrice), arriveMs, a)
 
             case a: GetFilledOrders =>
+              info(
+                s"""
+                   |Filled Orders:
+                   |${System.currentTimeMillis()/1000}
+                   |$a
+                 """.stripMargin)
               val res = FcoinActor.parseFilled(data, a.lastCounterId)
               a.book ! GotUncounteredOrders(res._1, res._2, isSortedFromOldest = true, arriveMs, a)
 
             case a: GetActiveOrders =>
+              info(s"""
+                 |Active Orders:
+                 |${System.currentTimeMillis()/1000}
+                 |$a
+                 """.stripMargin)
               val res = data.as[Seq[JsValue]].map(FcoinActor.toOffer)
               a.book ! GotActiveOrders(res, a.page, if (res.size == 100) true else false, arriveMs, a)
 
