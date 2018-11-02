@@ -144,7 +144,9 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
           val msg = (js \ "msg").as[String]
           msg match {
             case m if m.contains("api key check fail") => errorShutdown(ShutdownCode.fatal, 0, s"$request $m")
-            case _ => errorIgnore(0, msg)
+            case _ =>
+              error(raw)
+              errorIgnore(0, msg)
           }
         }
         else {
@@ -155,28 +157,16 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
               a.book ! GotTickerStartPrice(Some(lastPrice), arriveMs, a)
 
             case a: GetFilledOrders =>
-              info(
-                s"""
-                   |Filled Orders:
-                   |${System.currentTimeMillis()/1000}
-                   |${raw}
-                 """.stripMargin)
               val res = FcoinActor.parseFilled(data, a.lastCounterId)
               a.book ! GotUncounteredOrders(res._1, res._2, isSortedFromOldest = true, arriveMs, a)
 
             case a: GetActiveOrders =>
-              info(s"""
-                 |Active Orders:
-                 |${System.currentTimeMillis()/1000}
-                 |${raw}
-                 """.stripMargin)
               val res = data.as[Seq[JsValue]].map(FcoinActor.toOffer)
               a.book ! GotActiveOrders(res, a.page, if (res.size == 100) true else false, arriveMs, a)
 
             case a: CancelOrder =>  // not handled
 
             case a: NewOrder => // not handled, serverTime not available
-
 
           }
         }
@@ -187,7 +177,6 @@ class FcoinActor() extends AbsRestActor() with MyLogging {
           case _ => errorIgnore(0, s"Unknown FcoinActor#parse : $raw")
         }
     }
-
 
   }
 

@@ -1,3 +1,6 @@
+1.1.1
+- added error log on FCoin undetermined response
+
 1.1.0
 - fixed OrderRestActor, initseed happened to fast before ticker price arrived
 
